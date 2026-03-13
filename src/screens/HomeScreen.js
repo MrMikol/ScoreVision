@@ -16,7 +16,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.menu}>
         <TouchableOpacity
           style={styles.btnPrimary}
-          onPress={() => navigation.navigate('Game')}
+          onPress={() => navigation.navigate('GameSetup')}
         >
           <Text style={styles.btnPrimaryText}>▶  Start Training</Text>
         </TouchableOpacity>

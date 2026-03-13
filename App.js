@@ -5,6 +5,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import GameScreen from './src/screens/GameScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import GameSetupScreen from './src/screens/GameSetupScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +17,7 @@ export default function App() {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="GameSetup" component={GameSetupScreen} />
         <Stack.Screen name="Game" component={GameScreen} />
         <Stack.Screen name="Results" component={ResultsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
