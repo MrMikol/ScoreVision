@@ -19,7 +19,9 @@ const BLACK_KEY_HEIGHT = 75;
 
 export default function PianoKeyboard({ onKeyPress }) {
   const getBlackKeyLeft = (afterIndex) => {
-    return (afterIndex + 1) * WHITE_KEY_WIDTH - BLACK_KEY_WIDTH / 2;
+    // +1 accounts for the marginHorizontal: 1 on each white key
+    const whiteKeyWithMargin = WHITE_KEY_WIDTH + 2;
+    return (afterIndex + 1) * whiteKeyWithMargin - BLACK_KEY_WIDTH / 2 - 1;
   };
 
   return (
