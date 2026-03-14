@@ -40,15 +40,15 @@ export default function ResultsScreen({ navigation, route }) {
   const diffColor = DIFFICULTY_COLORS[difficulty];
 
   const getGrade = () => {
-    if (accuracy >= 90) return { label: 'S', color: '#c9972b' };
-    if (accuracy >= 75) return { label: 'A', color: '#2d7a4f' };
-    if (accuracy >= 60) return { label: 'B', color: '#2563a8' };
-    if (accuracy >= 45) return { label: 'C', color: '#c84b2f' };
-    return { label: 'D', color: '#888' };
+    if (accuracy >= 90) return { label: 'A', color: '#2d7a4f' };
+    if (accuracy >= 75) return { label: 'B', color: '#2563a8' };
+    if (accuracy >= 60) return { label: 'C', color: '#c9972b' };
+    if (accuracy >= 45) return { label: 'D', color: '#c84b2f' };
+    return { label: 'F', color: '#888' };
   };
 
   const getMotivation = () => {
-    if (accuracy >= 90) return "Outstanding! You're reading like a pro! 🏆";
+    if (accuracy >= 90) return "Excellent! No room for improvement! 🏆";
     if (accuracy >= 75) return 'Great work! Keep that momentum going! 🎵';
     if (accuracy >= 60) return 'Good effort! Practice makes perfect! 💪';
     if (accuracy >= 45) return "Keep going! You're improving! 🎶";

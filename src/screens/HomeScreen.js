@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: 8,
+    marginTop: 60,
   },
   title: {
     fontSize: 52,
