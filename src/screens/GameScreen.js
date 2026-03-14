@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,99 +6,251 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from 'react-native';
 import StaffDisplay from '../components/StaffDisplay';
 import PianoKeyboard from '../components/PianoKeyboard';
-import { TREBLE_NOTES, BASS_NOTES, NOTE_NAMES } from '../data/notes';
+import {
+  NOTE_NAMES,
+  ACCIDENTAL_NOTES,
+  getPool,
+  pickRandom,
+  getBaseName,
+  hasAccidental,
+} from '../data/notes';
 
-const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
-const CORRECT_TO_LEVELUP = 5;
-
-const getPool = (clef, difficulty) => {
-  const source = clef === 'treble' ? TREBLE_NOTES : BASS_NOTES;
-  let pool = [...source.beginner];
-  if (difficulty === 'intermediate') pool = [...pool, ...source.intermediate];
-  if (difficulty === 'advanced') pool = [...pool, ...source.intermediate, ...source.advanced];
-  return pool;
+// ─── CLEF LOGIC ──────────────────────────────────────────────────────────────
+const getClef = (difficulty, noteCount) => {
+  if (difficulty === 'easy') return 'treble';
+  if (difficulty === 'medium') return Math.random() < 0.5 ? 'treble' : 'bass';
+  // Hard: alternates every 3 notes
+  return Math.floor(noteCount / 3) % 2 === 0 ? 'treble' : 'bass';
 };
 
-const pickRandom = (pool) => pool[Math.floor(Math.random() * pool.length)];
+export default function GameScreen({ navigation, route }) {
+  const { difficulty = 'easy', mode = 'endless', option = null } = route.params || {};
 
-const getBaseName = (name) => name.replace('#', '').replace('b', '')[0].toUpperCase();
-
-export default function GameScreen({ navigation }) {
-  const [clef, setClef] = useState('treble');
-  const [difficulty, setDifficulty] = useState('beginner');
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  const [clef, setClef] = useState(() => getClef(difficulty, 0));
+  const [currentNote, setCurrentNote] = useState(() =>
+    pickRandom(getPool(difficulty === 'easy' ? 'treble' : 'treble', difficulty))
+  );
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [correctInRow, setCorrectInRow] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong' | null
+  const [bestStreak, setBestStreak] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [incorrect, setIncorrect] = useState(0);
+  const [noteCount, setNoteCount] = useState(0);
+  const [feedback, setFeedback] = useState(null);
   const [answering, setAnswering] = useState(true);
-  const [currentNote, setCurrentNote] = useState(
-    () => pickRandom(getPool('treble', 'beginner'))
-  );
+  const [gameOver, setGameOver] = useState(false);
 
-  const nextNote = useCallback((currentClef, currentDifficulty) => {
-    setFeedback(null);
-    setAnswering(true);
-    setCurrentNote(pickRandom(getPool(currentClef, currentDifficulty)));
+  // Timed mode
+  const [timeLeft, setTimeLeft] = useState(mode === 'timed' ? option : null);
+  const timerRef = useRef(null);
+
+  // ─── TIMER ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (mode === 'timed' && !gameOver) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            endGame();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [mode, gameOver]);
+
+  // ─── END GAME ─────────────────────────────────────────────────────────────
+  const endGame = useCallback(() => {
+    clearInterval(timerRef.current);
+    setGameOver(true);
+    setAnswering(false);
   }, []);
 
-  const handleAnswer = useCallback((noteName) => {
-    if (!answering) return;
-
-    const correct = getBaseName(noteName) === getBaseName(currentNote.name);
-    setAnswering(false);
-
-    if (correct) {
-      const newStreak = streak + 1;
-      const newCorrectInRow = correctInRow + 1;
-      const bonus = newStreak >= 3 ? 20 : 10;
-      const multiplier = difficulty === 'advanced' ? 2 : difficulty === 'intermediate' ? 1.5 : 1;
-
-      setScore(prev => prev + Math.round(bonus * multiplier));
-      setStreak(newStreak);
-      setFeedback('correct');
-
-      // Level up
-      if (newCorrectInRow >= CORRECT_TO_LEVELUP) {
-        setCorrectInRow(0);
-        setLevel(prev => prev + 1);
-        const nextDiffIndex = DIFFICULTIES.indexOf(difficulty) + 1;
-        if (nextDiffIndex < DIFFICULTIES.length) {
-          const nextDiff = DIFFICULTIES[nextDiffIndex];
-          setDifficulty(nextDiff);
-          setTimeout(() => nextNote(clef, nextDiff), 900);
-          return;
-        }
-      } else {
-        setCorrectInRow(newCorrectInRow);
-      }
-    } else {
-      setStreak(0);
-      setCorrectInRow(0);
-      setFeedback('wrong');
+  // Navigate to results when gameOver
+  useEffect(() => {
+    if (gameOver) {
+      navigation.replace('Results', {
+        score,
+        correct,
+        incorrect,
+        bestStreak,
+        total: correct + incorrect,
+        difficulty,
+        mode,
+        option,
+      });
     }
+  }, [gameOver]);
 
-    setTimeout(() => nextNote(clef, difficulty), 900);
-  }, [answering, currentNote, streak, correctInRow, difficulty, clef, nextNote]);
-
-  const handleClefChange = (newClef) => {
+  // ─── NEXT NOTE ────────────────────────────────────────────────────────────
+  const nextNote = useCallback((count) => {
+    const newClef = getClef(difficulty, count);
     setClef(newClef);
     setCurrentNote(pickRandom(getPool(newClef, difficulty)));
     setFeedback(null);
     setAnswering(true);
+  }, [difficulty]);
+
+  // ─── HANDLE ANSWER ────────────────────────────────────────────────────────
+  const handleAnswer = useCallback((noteName) => {
+    if (!answering || gameOver) return;
+
+    const isAccidentalNote = hasAccidental(currentNote);
+    let isCorrect = false;
+
+    if (isAccidentalNote) {
+      // Must match full name e.g. F# or Bb
+      isCorrect = noteName === currentNote.name;
+    } else {
+      // Just match base letter
+      isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
+    }
+
+    setAnswering(false);
+
+    const newNoteCount = noteCount + 1;
+    setNoteCount(newNoteCount);
+
+    if (isCorrect) {
+      const newStreak = streak + 1;
+      const newCorrect = correct + 1;
+      const bonus = newStreak >= 3 ? 20 : 10;
+      const multiplier =
+        difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1.5 : 1;
+
+      setScore(prev => prev + Math.round(bonus * multiplier));
+      setStreak(newStreak);
+      setBestStreak(prev => Math.max(prev, newStreak));
+      setCorrect(newCorrect);
+      setFeedback('correct');
+
+      // Challenge mode end check
+      if (mode === 'challenge' && newNoteCount >= option) {
+        setTimeout(() => endGame(), 900);
+        return;
+      }
+    } else {
+      setStreak(0);
+      setIncorrect(prev => prev + 1);
+      setFeedback('wrong');
+    }
+
+    setTimeout(() => nextNote(newNoteCount), 900);
+  }, [answering, gameOver, currentNote, streak, correct, noteCount, difficulty, mode, option, nextNote, endGame]);
+
+  // ─── END SESSION (Endless) ────────────────────────────────────────────────
+  const handleEndSession = () => {
+    Alert.alert(
+      'End Session?',
+      'Your stats will be saved and shown.',
+      [
+        { text: 'Keep Playing', style: 'cancel' },
+        { text: 'End', style: 'destructive', onPress: endGame },
+      ]
+    );
   };
 
+  // ─── SKIP ─────────────────────────────────────────────────────────────────
   const handleSkip = () => {
+    if (gameOver) return;
     setStreak(0);
-    setCorrectInRow(0);
-    nextNote(clef, difficulty);
+    setIncorrect(prev => prev + 1);
+    setFeedback('wrong');
+    const newNoteCount = noteCount + 1;
+    setNoteCount(newNoteCount);
+
+    // Challenge mode end check
+    if (mode === 'challenge' && newNoteCount >= option) {
+      setTimeout(() => endGame(), 900);
+      return;
+    }
+
+    setTimeout(() => nextNote(newNoteCount), 900);
   };
 
-  const progressPct = (correctInRow / CORRECT_TO_LEVELUP) * 100;
+  // ─── RENDER NOTE BUTTONS ──────────────────────────────────────────────────
+  const renderNoteButtons = () => {
+    if (hasAccidental(currentNote)) {
+      // Show both sharps and flats + natural notes
+      return (
+        <View style={styles.accidentalButtons}>
+          {/* Natural notes row */}
+          <View style={styles.noteButtons}>
+            {NOTE_NAMES.map(note => (
+              <TouchableOpacity
+                key={note}
+                style={styles.noteBtn}
+                onPress={() => handleAnswer(note)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.noteBtnText}>{note}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
+          {/* Sharps row */}
+          <View style={styles.noteButtons}>
+            {ACCIDENTAL_NOTES.sharps.map(note => (
+              <TouchableOpacity
+                key={note}
+                style={[styles.noteBtn, styles.noteBtnSharp]}
+                onPress={() => handleAnswer(note)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.noteBtnText}>{note}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Flats row */}
+          <View style={styles.noteButtons}>
+            {ACCIDENTAL_NOTES.flats.map(note => (
+              <TouchableOpacity
+                key={note}
+                style={[styles.noteBtn, styles.noteBtnFlat]}
+                onPress={() => handleAnswer(note)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.noteBtnText}>{note}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    // Normal note buttons
+    return (
+      <View style={styles.noteButtons}>
+        {NOTE_NAMES.map(note => (
+          <TouchableOpacity
+            key={note}
+            style={styles.noteBtn}
+            onPress={() => handleAnswer(note)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.noteBtnText}>{note}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  // ─── PROGRESS (Challenge mode) ────────────────────────────────────────────
+  const progressPct = mode === 'challenge'
+    ? (noteCount / option) * 100
+    : mode === 'timed'
+    ? (timeLeft / option) * 100
+    : 0;
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -119,35 +271,35 @@ export default function GameScreen({ navigation }) {
               </Text>
               <Text style={styles.statLbl}>Streak</Text>
             </View>
-            <View style={styles.stat}>
-              <Text style={styles.statVal}>{level}</Text>
-              <Text style={styles.statLbl}>Level</Text>
-            </View>
+            {mode === 'timed' && (
+              <View style={styles.stat}>
+                <Text style={[styles.statVal, timeLeft <= 10 && styles.timerWarn]}>
+                  {timeLeft}s
+                </Text>
+                <Text style={styles.statLbl}>Time</Text>
+              </View>
+            )}
+            {mode === 'challenge' && (
+              <View style={styles.stat}>
+                <Text style={styles.statVal}>{noteCount}/{option}</Text>
+                <Text style={styles.statLbl}>Notes</Text>
+              </View>
+            )}
           </View>
         </View>
 
         {/* Progress Bar */}
-        <View style={styles.progressWrap}>
-          <View style={[styles.progressBar, { width: `${progressPct}%` }]} />
-        </View>
+        {(mode === 'challenge' || mode === 'timed') && (
+          <View style={styles.progressWrap}>
+            <View style={[styles.progressBar, { width: `${progressPct}%` }]} />
+          </View>
+        )}
 
-        {/* Clef Selector */}
-        <View style={styles.pillGroup}>
-          {['treble', 'bass'].map(c => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.pill, clef === c && styles.pillActive]}
-              onPress={() => handleClefChange(c)}
-            >
-              <Text style={[styles.pillText, clef === c && styles.pillTextActive]}>
-                {c.charAt(0).toUpperCase() + c.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Difficulty + Clef badges */}
+        <View style={styles.badges}>
+          <Text style={styles.badge}>{difficulty.toUpperCase()}</Text>
+          <Text style={styles.badge}>{clef.toUpperCase()} CLEF</Text>
         </View>
-
-        {/* Difficulty Badge */}
-        <Text style={styles.diffBadge}>{difficulty.toUpperCase()}</Text>
 
         {/* Staff */}
         <View style={styles.staffWrap}>
@@ -155,7 +307,7 @@ export default function GameScreen({ navigation }) {
           {feedback && (
             <View style={[
               styles.feedbackOverlay,
-              feedback === 'correct' ? styles.feedbackCorrect : styles.feedbackWrong
+              feedback === 'correct' ? styles.feedbackCorrect : styles.feedbackWrong,
             ]}>
               <Text style={styles.feedbackText}>
                 {feedback === 'correct' ? '✓' : '✗'}
@@ -165,18 +317,7 @@ export default function GameScreen({ navigation }) {
         </View>
 
         {/* Note Buttons */}
-        <View style={styles.noteButtons}>
-          {NOTE_NAMES.map(note => (
-            <TouchableOpacity
-              key={note}
-              style={styles.noteBtn}
-              onPress={() => handleAnswer(note)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.noteBtnText}>{note}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {renderNoteButtons()}
 
         {/* Divider */}
         <Text style={styles.divider}>— or play on piano —</Text>
@@ -184,10 +325,18 @@ export default function GameScreen({ navigation }) {
         {/* Piano */}
         <PianoKeyboard onKeyPress={handleAnswer} />
 
-        {/* Skip */}
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-          <Text style={styles.skipText}>skip →</Text>
-        </TouchableOpacity>
+        {/* Bottom Buttons */}
+        <View style={styles.bottomRow}>
+          <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+            <Text style={styles.skipText}>skip →</Text>
+          </TouchableOpacity>
+
+          {mode === 'endless' && (
+            <TouchableOpacity style={styles.endBtn} onPress={handleEndSession}>
+              <Text style={styles.endBtnText}>■ End Session</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
       </ScrollView>
     </SafeAreaView>
@@ -211,9 +360,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backBtn: {
-    padding: 8,
-  },
+  backBtn: { padding: 8 },
   backText: {
     fontSize: 16,
     fontWeight: '600',
@@ -223,18 +370,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
   },
-  stat: {
-    alignItems: 'center',
-  },
+  stat: { alignItems: 'center' },
   statVal: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1a1a1a',
     fontFamily: 'monospace',
   },
-  streakFire: {
-    color: '#c84b2f',
-  },
+  streakFire: { color: '#c84b2f' },
+  timerWarn: { color: '#c84b2f' },
   statLbl: {
     fontSize: 10,
     opacity: 0.5,
@@ -253,30 +397,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#c84b2f',
     borderRadius: 2,
   },
-  pillGroup: {
+  badges: {
     flexDirection: 'row',
-    borderWidth: 1.5,
-    borderColor: '#1a1a1a',
-    borderRadius: 999,
-    overflow: 'hidden',
+    gap: 10,
   },
-  pill: {
-    paddingVertical: 7,
-    paddingHorizontal: 20,
-    backgroundColor: 'transparent',
-  },
-  pillActive: {
-    backgroundColor: '#1a1a1a',
-  },
-  pillText: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    color: '#1a1a1a',
-  },
-  pillTextActive: {
-    color: '#f5f0e8',
-  },
-  diffBadge: {
+  badge: {
     fontFamily: 'monospace',
     fontSize: 11,
     letterSpacing: 2,
@@ -289,26 +414,25 @@ const styles = StyleSheet.create({
   },
   feedbackOverlay: {
     position: 'absolute',
-    inset: 0,
     top: 0, left: 0, right: 0, bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 4,
   },
-  feedbackCorrect: {
-    backgroundColor: 'rgba(45,122,79,0.15)',
-  },
-  feedbackWrong: {
-    backgroundColor: 'rgba(200,75,47,0.15)',
-  },
+  feedbackCorrect: { backgroundColor: 'rgba(45,122,79,0.15)' },
+  feedbackWrong: { backgroundColor: 'rgba(200,75,47,0.15)' },
   feedbackText: {
     fontSize: 64,
     fontWeight: '900',
     color: '#1a1a1a',
   },
+  accidentalButtons: {
+    width: '100%',
+    gap: 8,
+  },
   noteButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     flexWrap: 'wrap',
     justifyContent: 'center',
     width: '100%',
@@ -323,8 +447,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  noteBtnSharp: {
+    backgroundColor: '#fff8e6',
+    borderColor: '#c9972b',
+  },
+  noteBtnFlat: {
+    backgroundColor: '#e6f0ff',
+    borderColor: '#2563a8',
+  },
   noteBtnText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1a1a1a',
   },
@@ -333,6 +465,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.4,
     letterSpacing: 1,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   skipBtn: {
     paddingVertical: 8,
@@ -345,5 +482,17 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 13,
     color: 'rgba(0,0,0,0.4)',
+  },
+  endBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 22,
+    borderWidth: 1.5,
+    borderColor: '#c84b2f',
+    borderRadius: 999,
+  },
+  endBtnText: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    color: '#c84b2f',
   },
 });
