@@ -1,3 +1,4 @@
+import StaffDisplay from '../components/StaffDisplay';
 import { useState } from 'react';
 import {
   View,
@@ -180,7 +181,16 @@ export default function ResultsScreen({ navigation, route }) {
                   attempt.wasCorrect ? styles.reviewCorrect : styles.reviewWrong,
                 ]}
               >
-                {/* Left side */}
+                {/* Staff diagram */}
+                <View style={styles.reviewStaff}>
+                  <StaffDisplay
+                    note={attempt.correctNoteObj}
+                    clef={attempt.clef}
+                    small
+                  />
+                </View>
+
+                {/* Note info */}
                 <View style={styles.reviewLeft}>
                   <Text style={styles.reviewClef}>
                     {attempt.clef.toUpperCase()} CLEF
@@ -205,7 +215,7 @@ export default function ResultsScreen({ navigation, route }) {
                   </View>
                 </View>
 
-                {/* Right side */}
+                {/* Result */}
                 <Text style={[
                   styles.reviewResult,
                   attempt.wasCorrect ? { color: '#2d7a4f' } : { color: '#c84b2f' },
@@ -493,5 +503,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  reviewStaff: {
+    marginBottom: 10,
   },
 });

@@ -9,63 +9,69 @@ const NOTE_RADIUS_Y = 8;
 const CLEF_X = 20;
 const NOTE_X = 180;
 
-export default function StaffDisplay({ note, clef = 'treble' }) {
-  const staffWidth = 320;
-  const staffHeight = 160;
+export default function StaffDisplay({ note, clef = 'treble', small = false }) {
+  const staffWidth = small ? 160 : 320;
+  const staffHeight = small ? 80 : 160;
+  const scale = small ? 0.5 : 1;
+
+  const SCALED_STAFF_TOP = STAFF_TOP * scale;
+  const SCALED_LINE_SPACING = LINE_SPACING * scale;
+  const SCALED_NOTE_R_X = NOTE_RADIUS_X * scale;
+  const SCALED_NOTE_R_Y = NOTE_RADIUS_Y * scale;
+  const SCALED_CLEF_X = CLEF_X * scale;
+  const SCALED_NOTE_X = NOTE_X * scale;
 
   const getNoteY = (position) => {
-    return STAFF_TOP + (4 - position) * LINE_SPACING;
+    return SCALED_STAFF_TOP + (4 - position) * SCALED_LINE_SPACING;
   };
 
   const renderStaffLines = () => {
     return Array.from({ length: STAFF_LINES }).map((_, i) => (
       <Line
         key={i}
-        x1={CLEF_X + 40}
-        y1={STAFF_TOP + i * LINE_SPACING}
-        x2={staffWidth - 10}
-        y2={STAFF_TOP + i * LINE_SPACING}
+        x1={SCALED_CLEF_X + 20}
+        y1={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
+        x2={staffWidth - 5}
+        y2={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
         stroke="#1a1a1a"
-        strokeWidth="1.5"
+        strokeWidth={small ? 0.75 : 1.5}
       />
     ));
   };
 
   const renderLedgerLines = (position) => {
     const lines = [];
-    const ledgerWidth = NOTE_RADIUS_X * 2.8;
+    const ledgerWidth = SCALED_NOTE_R_X * 2.8;
 
-    // Below staff
     for (let l = -1; l >= Math.floor(position); l--) {
       if (l % 1 === 0) {
         const y = getNoteY(l);
         lines.push(
           <Line
             key={`ledger-below-${l}`}
-            x1={NOTE_X - ledgerWidth / 2}
+            x1={SCALED_NOTE_X - ledgerWidth / 2}
             y1={y}
-            x2={NOTE_X + ledgerWidth / 2}
+            x2={SCALED_NOTE_X + ledgerWidth / 2}
             y2={y}
             stroke="#1a1a1a"
-            strokeWidth="1.5"
+            strokeWidth={small ? 0.75 : 1.5}
           />
         );
       }
     }
 
-    // Above staff
     for (let l = 5; l <= Math.ceil(position); l++) {
       if (l % 1 === 0) {
         const y = getNoteY(l);
         lines.push(
           <Line
             key={`ledger-above-${l}`}
-            x1={NOTE_X - ledgerWidth / 2}
+            x1={SCALED_NOTE_X - ledgerWidth / 2}
             y1={y}
-            x2={NOTE_X + ledgerWidth / 2}
+            x2={SCALED_NOTE_X + ledgerWidth / 2}
             y2={y}
             stroke="#1a1a1a"
-            strokeWidth="1.5"
+            strokeWidth={small ? 0.75 : 1.5}
           />
         );
       }
@@ -77,36 +83,36 @@ export default function StaffDisplay({ note, clef = 'treble' }) {
   const renderNote = (position) => {
     const noteY = getNoteY(position);
     const stemDir = position < 2 ? -1 : 1;
-    const stemLen = LINE_SPACING * 3.5;
+    const stemLen = SCALED_LINE_SPACING * 3.5;
 
     return (
       <>
         {/* Note head */}
         <Ellipse
-          cx={NOTE_X}
+          cx={SCALED_NOTE_X}
           cy={noteY}
-          rx={NOTE_RADIUS_X}
-          ry={NOTE_RADIUS_Y}
+          rx={SCALED_NOTE_R_X}
+          ry={SCALED_NOTE_R_Y}
           fill="#1a1a1a"
-          transform={`rotate(-15, ${NOTE_X}, ${noteY})`}
+          transform={`rotate(-15, ${SCALED_NOTE_X}, ${noteY})`}
         />
 
         {/* Stem */}
         <Line
-          x1={stemDir === -1 ? NOTE_X + NOTE_RADIUS_X - 1 : NOTE_X - NOTE_RADIUS_X + 1}
+          x1={stemDir === -1 ? SCALED_NOTE_X + SCALED_NOTE_R_X - 1 : SCALED_NOTE_X - SCALED_NOTE_R_X + 1}
           y1={noteY}
-          x2={stemDir === -1 ? NOTE_X + NOTE_RADIUS_X - 1 : NOTE_X - NOTE_RADIUS_X + 1}
+          x2={stemDir === -1 ? SCALED_NOTE_X + SCALED_NOTE_R_X - 1 : SCALED_NOTE_X - SCALED_NOTE_R_X + 1}
           y2={noteY + stemDir * stemLen}
           stroke="#1a1a1a"
-          strokeWidth="1.8"
+          strokeWidth={small ? 0.9 : 1.8}
         />
 
         {/* Accidental */}
         {note?.accidental === 'sharp' && (
           <SvgText
-            x={NOTE_X - NOTE_RADIUS_X * 3}
-            y={noteY + 7}
-            fontSize="20"
+            x={SCALED_NOTE_X - SCALED_NOTE_R_X * 3}
+            y={noteY + 7 * scale}
+            fontSize={small ? 11 : 20}
             fill="#1a1a1a"
           >
             ♯
@@ -114,9 +120,9 @@ export default function StaffDisplay({ note, clef = 'treble' }) {
         )}
         {note?.accidental === 'flat' && (
           <SvgText
-            x={NOTE_X - NOTE_RADIUS_X * 3}
-            y={noteY + 7}
-            fontSize="20"
+            x={SCALED_NOTE_X - SCALED_NOTE_R_X * 3}
+            y={noteY + 7 * scale}
+            fontSize={small ? 11 : 20}
             fill="#1a1a1a"
           >
             ♭
@@ -130,9 +136,9 @@ export default function StaffDisplay({ note, clef = 'treble' }) {
     if (clef === 'treble') {
       return (
         <SvgText
-          x={CLEF_X}
-          y={STAFF_TOP + 52}
-          fontSize="88"
+          x={SCALED_CLEF_X}
+          y={SCALED_STAFF_TOP + 52 * scale}
+          fontSize={small ? 44 : 88}
           fill="#1a1a1a"
         >
           𝄞
@@ -141,9 +147,9 @@ export default function StaffDisplay({ note, clef = 'treble' }) {
     } else {
       return (
         <SvgText
-          x={CLEF_X}
-          y={STAFF_TOP + 34}
-          fontSize="72"
+          x={SCALED_CLEF_X}
+          y={SCALED_STAFF_TOP + 34 * scale}
+          fontSize={small ? 36 : 72}
           fill="#1a1a1a"
         >
           𝄢

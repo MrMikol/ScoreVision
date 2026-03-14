@@ -134,6 +134,7 @@ export default function GameScreen({ navigation, route }) {
   setAttemptHistory(prev => [...prev, {
     clef,
     correctNote: currentNote.name,
+    correctNoteObj: currentNote,
     answeredNote: noteName,
     wasCorrect: isCorrect,
   }]);
@@ -192,6 +193,7 @@ export default function GameScreen({ navigation, route }) {
   setAttemptHistory(prev => [...prev, {
     clef,
     correctNote: currentNote.name,
+    correctNoteObj: currentNote,
     answeredNote: 'skipped',
     wasCorrect: false,
   }]);
