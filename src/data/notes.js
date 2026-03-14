@@ -49,15 +49,15 @@ export const TREBLE_NOTES = {
     { name: 'A', octave: 5, position: 5 },
     { name: 'B', octave: 5, position: 5.5 },
     { name: 'C', octave: 6, position: 6 },
-    // Accidentals — 5 unique black keys only, no enharmonic duplicates
-    // Using sharps for F# and C# (very common), flats for the rest
-    { name: 'F#', octave: 4, position: 0.5, accidental: 'sharp' }, // between F and G
-    { name: 'C#', octave: 5, position: 2.5, accidental: 'sharp' }, // between C and D
-    { name: 'Bb', octave: 4, position: 2,   accidental: 'flat'  }, // between A and B
-    { name: 'Eb', octave: 5, position: 3.5, accidental: 'flat'  }, // between D and E
-    { name: 'Ab', octave: 4, position: 1.5, accidental: 'flat'  }, // between G and A
-    { name: 'Db', octave: 5, position: 2.5, accidental: 'flat'  }, // between C and D
-    { name: 'Gb', octave: 4, position: 1,   accidental: 'flat'  }, // between F and G
+    // Accidentals — 7 unique accidentals, no enharmonic duplicates
+    // Sharps for F# and C# (most common), flats for the rest
+    { name: 'F#', octave: 4, position: 0.5, accidental: 'sharp' }, // F space
+    { name: 'C#', octave: 5, position: 2.5, accidental: 'sharp' }, // C space
+    { name: 'Bb', octave: 4, position: 2,   accidental: 'flat'  }, // B line
+    { name: 'Eb', octave: 5, position: 3.5, accidental: 'flat'  }, // E space
+    { name: 'Ab', octave: 4, position: 1.5, accidental: 'flat'  }, // A space
+    { name: 'Db', octave: 5, position: 3,   accidental: 'flat'  }, // D line ← FIXED (was 2.5)
+    { name: 'Gb', octave: 4, position: 1,   accidental: 'flat'  }, // G line
   ],
 };
 
@@ -110,14 +110,15 @@ export const BASS_NOTES = {
     { name: 'B', octave: 3, position: 4.5 },
     { name: 'C', octave: 4, position: 5 },
     { name: 'D', octave: 4, position: 5.5 },
-    // Accidentals — 5 unique black keys only, no enharmonic duplicates
-    { name: 'F#', octave: 2, position: -0.5, accidental: 'sharp' }, // between F and G
-    { name: 'C#', octave: 3, position: 1.5,  accidental: 'sharp' }, // between C and D
-    { name: 'Bb', octave: 2, position: 1,    accidental: 'flat'  }, // between A and B
-    { name: 'Eb', octave: 3, position: 2.5,  accidental: 'flat'  }, // between D and E
-    { name: 'Ab', octave: 2, position: 0.5,  accidental: 'flat'  }, // between G and A
-    { name: 'Db', octave: 3, position: 1.5,  accidental: 'flat'  }, // between C and D
-    { name: 'Gb', octave: 3, position: 3,    accidental: 'flat'  }, // between F and G
+    // Accidentals — 7 unique accidentals, no enharmonic duplicates
+    // Sharps for F# and C# (most common), flats for the rest
+    { name: 'F#', octave: 2, position: -0.5, accidental: 'sharp' }, // F ledger line
+    { name: 'C#', octave: 3, position: 1.5,  accidental: 'sharp' }, // C space
+    { name: 'Bb', octave: 2, position: 1,    accidental: 'flat'  }, // B line
+    { name: 'Eb', octave: 3, position: 2.5,  accidental: 'flat'  }, // E space
+    { name: 'Ab', octave: 2, position: 0.5,  accidental: 'flat'  }, // A space
+    { name: 'Db', octave: 3, position: 2,    accidental: 'flat'  }, // D line
+    { name: 'Gb', octave: 3, position: 3.5,  accidental: 'flat'  }, // G space
   ],
 };
 
