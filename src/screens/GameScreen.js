@@ -28,7 +28,12 @@ const getClef = (difficulty, noteCount) => {
 };
 
 export default function GameScreen({ navigation, route }) {
-  const { difficulty = 'easy', mode = 'endless', option = null } = route.params || {};
+  const { 
+  difficulty = 'easy', 
+  mode = 'endless', 
+  option = null,
+  inputMethod = 'both',
+} = route.params || {};
 
   // ─── STATE ────────────────────────────────────────────────────────────────
   const [clef, setClef] = useState(() => getClef(difficulty, 0));
@@ -44,6 +49,7 @@ export default function GameScreen({ navigation, route }) {
   const [feedback, setFeedback] = useState(null);
   const [answering, setAnswering] = useState(true);
   const [gameOver, setGameOver] = useState(false);
+  const [attemptHistory, setAttemptHistory] = useState([]);
 
   // Timed mode
   const [timeLeft, setTimeLeft] = useState(mode === 'timed' ? option : null);
@@ -85,6 +91,7 @@ export default function GameScreen({ navigation, route }) {
         difficulty,
         mode,
         option,
+        attemptHistory,
       });
     }
   }, [gameOver]);
@@ -100,50 +107,67 @@ export default function GameScreen({ navigation, route }) {
 
   // ─── HANDLE ANSWER ────────────────────────────────────────────────────────
   const handleAnswer = useCallback((noteName) => {
-    if (!answering || gameOver) return;
+  if (!answering || gameOver) return;
 
-    const isAccidentalNote = hasAccidental(currentNote);
-    let isCorrect = false;
+  const ENHARMONIC = {
+    'C#': 'Db', 'Db': 'C#',
+    'F#': 'Gb', 'Gb': 'F#',
+    'Eb': 'D#', 'D#': 'Eb',
+    'Ab': 'G#', 'G#': 'Ab',
+    'Bb': 'A#', 'A#': 'Bb',
+  };
 
-    if (isAccidentalNote) {
-      // Must match full name e.g. F# or Bb
-      isCorrect = noteName === currentNote.name;
-    } else {
-      // Just match base letter
-      isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
-    }
+  const isAccidentalNote = hasAccidental(currentNote);
+  let isCorrect = false;
 
-    setAnswering(false);
+  if (isAccidentalNote) {
+    isCorrect =
+      noteName === currentNote.name ||
+      ENHARMONIC[noteName] === currentNote.name;
+  } else {
+    isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
+  }
 
-    const newNoteCount = noteCount + 1;
-    setNoteCount(newNoteCount);
+  setAnswering(false);
 
-    if (isCorrect) {
-      const newStreak = streak + 1;
-      const newCorrect = correct + 1;
-      const bonus = newStreak >= 3 ? 20 : 10;
-      const multiplier =
-        difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1.5 : 1;
+  // Log attempt to history
+  setAttemptHistory(prev => [...prev, {
+    clef,
+    correctNote: currentNote.name,
+    answeredNote: noteName,
+    wasCorrect: isCorrect,
+  }]);
 
-      setScore(prev => prev + Math.round(bonus * multiplier));
-      setStreak(newStreak);
-      setBestStreak(prev => Math.max(prev, newStreak));
-      setCorrect(newCorrect);
-      setFeedback('correct');
+  // Increment note count first
+  const newNoteCount = noteCount + 1;
+  setNoteCount(newNoteCount);
 
-      // Challenge mode end check
-      if (mode === 'challenge' && newNoteCount >= option) {
-        setTimeout(() => endGame(), 900);
-        return;
-      }
-    } else {
-      setStreak(0);
-      setIncorrect(prev => prev + 1);
-      setFeedback('wrong');
-    }
+  if (isCorrect) {
+    const newStreak = streak + 1;
+    const newCorrect = correct + 1;
+    const bonus = newStreak >= 3 ? 20 : 10;
+    const multiplier =
+      difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1.5 : 1;
 
-    setTimeout(() => nextNote(newNoteCount), 900);
-  }, [answering, gameOver, currentNote, streak, correct, noteCount, difficulty, mode, option, nextNote, endGame]);
+    setScore(prev => prev + Math.round(bonus * multiplier));
+    setStreak(newStreak);
+    setBestStreak(prev => Math.max(prev, newStreak));
+    setCorrect(newCorrect);
+    setFeedback('correct');
+  } else {
+    setStreak(0);
+    setIncorrect(prev => prev + 1);
+    setFeedback('wrong');
+  }
+
+  // Challenge end check runs for BOTH correct and wrong answers
+  if (mode === 'challenge' && newNoteCount >= option) {
+    setTimeout(() => endGame(), 900);
+    return;
+  }
+
+  setTimeout(() => nextNote(newNoteCount), 900);
+}, [answering, gameOver, currentNote, streak, correct, noteCount, difficulty, mode, option, nextNote, endGame]);
 
   // ─── END SESSION (Endless) ────────────────────────────────────────────────
   const handleEndSession = () => {
@@ -159,21 +183,29 @@ export default function GameScreen({ navigation, route }) {
 
   // ─── SKIP ─────────────────────────────────────────────────────────────────
   const handleSkip = () => {
-    if (gameOver) return;
-    setStreak(0);
-    setIncorrect(prev => prev + 1);
-    setFeedback('wrong');
-    const newNoteCount = noteCount + 1;
-    setNoteCount(newNoteCount);
+  if (gameOver) return;
+  setStreak(0);
+  setIncorrect(prev => prev + 1);
+  setFeedback('wrong');
 
-    // Challenge mode end check
-    if (mode === 'challenge' && newNoteCount >= option) {
-      setTimeout(() => endGame(), 900);
-      return;
-    }
+  // Log skip to history
+  setAttemptHistory(prev => [...prev, {
+    clef,
+    correctNote: currentNote.name,
+    answeredNote: 'skipped',
+    wasCorrect: false,
+  }]);
 
-    setTimeout(() => nextNote(newNoteCount), 900);
-  };
+  const newNoteCount = noteCount + 1;
+  setNoteCount(newNoteCount);
+
+  if (mode === 'challenge' && newNoteCount >= option) {
+    setTimeout(() => endGame(), 900);
+    return;
+  }
+
+  setTimeout(() => nextNote(newNoteCount), 900);
+};
 
   // ─── RENDER NOTE BUTTONS ──────────────────────────────────────────────────
   const renderNoteButtons = () => {
@@ -317,13 +349,17 @@ export default function GameScreen({ navigation, route }) {
         </View>
 
         {/* Note Buttons */}
-        {renderNoteButtons()}
+        {(inputMethod === 'buttons' || inputMethod === 'both') && renderNoteButtons()}
 
         {/* Divider */}
-        <Text style={styles.divider}>— or play on piano —</Text>
+        {inputMethod === 'both' && (
+          <Text style={styles.divider}>— or play on piano —</Text>
+        )}
 
         {/* Piano */}
-        <PianoKeyboard onKeyPress={handleAnswer} />
+        {(inputMethod === 'piano' || inputMethod === 'both') && (
+          <PianoKeyboard onKeyPress={handleAnswer} />
+)}
 
         {/* Bottom Buttons */}
         <View style={styles.bottomRow}>

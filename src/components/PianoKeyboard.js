@@ -2,13 +2,14 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 const WHITE_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
-// black key positions relative to white keys
+// Black keys with correct enharmonic names
+// Dual labels for commonly used enharmonic pairs
 const BLACK_KEYS = [
-  { note: 'Db', after: 0 },
-  { note: 'Eb', after: 1 },
-  { note: 'Gb', after: 3 },
-  { note: 'Ab', after: 4 },
-  { note: 'Bb', after: 5 },
+  { note: 'C#', label: 'C#\nDb', after: 0 },  // between C and D
+  { note: 'Eb', label: 'Eb',     after: 1 },  // between D and E
+  { note: 'F#', label: 'F#\nGb', after: 3 },  // between F and G
+  { note: 'Ab', label: 'Ab',     after: 4 },  // between G and A
+  { note: 'Bb', label: 'Bb',     after: 5 },  // between A and B
 ];
 
 const WHITE_KEY_WIDTH = 44;
@@ -16,7 +17,7 @@ const WHITE_KEY_HEIGHT = 120;
 const BLACK_KEY_WIDTH = 28;
 const BLACK_KEY_HEIGHT = 75;
 
-export default function PianoKeyboard({ onKeyPress, highlightKey }) {
+export default function PianoKeyboard({ onKeyPress }) {
   const getBlackKeyLeft = (afterIndex) => {
     return (afterIndex + 1) * WHITE_KEY_WIDTH - BLACK_KEY_WIDTH / 2;
   };
@@ -29,10 +30,7 @@ export default function PianoKeyboard({ onKeyPress, highlightKey }) {
         {WHITE_KEYS.map((note) => (
           <TouchableOpacity
             key={note}
-            style={[
-              styles.whiteKey,
-              highlightKey === note && styles.whiteKeyHighlight,
-            ]}
+            style={styles.whiteKey}
             onPress={() => onKeyPress(note)}
             activeOpacity={0.7}
           >
@@ -41,7 +39,7 @@ export default function PianoKeyboard({ onKeyPress, highlightKey }) {
         ))}
 
         {/* Black Keys */}
-        {BLACK_KEYS.map(({ note, after }) => (
+        {BLACK_KEYS.map(({ note, label, after }) => (
           <TouchableOpacity
             key={note}
             style={[
@@ -50,7 +48,9 @@ export default function PianoKeyboard({ onKeyPress, highlightKey }) {
             ]}
             onPress={() => onKeyPress(note)}
             activeOpacity={0.7}
-          />
+          >
+            <Text style={styles.blackKeyLabel}>{label}</Text>
+          </TouchableOpacity>
         ))}
 
       </View>
@@ -81,10 +81,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     zIndex: 1,
   },
-  whiteKeyHighlight: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#2563a8',
-  },
   whiteKeyLabel: {
     fontSize: 11,
     color: '#888',
@@ -98,5 +94,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     zIndex: 2,
     top: 0,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 5,
+  },
+  blackKeyLabel: {
+    fontSize: 7,
+    color: '#aaa',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    lineHeight: 9,
   },
 });

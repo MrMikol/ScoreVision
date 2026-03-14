@@ -58,23 +58,44 @@ const GAME_MODES = [
   },
 ];
 
+const INPUT_METHODS = [
+  {
+    id: 'buttons',
+    label: '🎵 Note Buttons',
+    description: 'Tap C D E F G A B buttons to answer',
+  },
+  {
+    id: 'piano',
+    label: '🎹 Virtual Piano',
+    description: 'Tap the matching key on the piano to answer',
+  },
+  {
+    id: 'both',
+    label: '🎵🎹 Both',
+    description: 'Show both note buttons and virtual piano',
+  },
+];
+
 export default function GameSetupScreen({ navigation }) {
   const [selectedDifficulty, setSelectedDifficulty] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedInput, setSelectedInput] = useState(null);
 
   const selectedModeData = GAME_MODES.find(m => m.id === selectedMode);
 
   const canStart =
     selectedDifficulty !== null &&
     selectedMode !== null &&
-    (selectedMode === 'endless' || selectedOption !== null);
+    (selectedMode === 'endless' || selectedOption !== null) &&
+    selectedInput !== null;
 
   const handleStart = () => {
     navigation.navigate('Game', {
       difficulty: selectedDifficulty,
       mode: selectedMode,
       option: selectedOption,
+      inputMethod: selectedInput,
     });
   };
 
@@ -156,6 +177,36 @@ export default function GameSetupScreen({ navigation }) {
             ))}
           </View>
         </View>
+        
+        {/* Step 4 - Input Method */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>04 — Input Method</Text>
+          <View style={styles.cards}>
+            {INPUT_METHODS.map(m => (
+              <TouchableOpacity
+                key={m.id}
+                style={[
+                  styles.card,
+                  selectedInput === m.id && styles.cardActive,
+                ]}
+                onPress={() => setSelectedInput(m.id)}
+              >
+                <View style={styles.cardTop}>
+                  <Text style={[
+                    styles.cardLabel,
+                    selectedInput === m.id && styles.cardLabelActive,
+                  ]}>
+                    {m.label}
+                  </Text>
+                  {selectedInput === m.id && (
+                    <Text style={styles.checkmarkBlue}>✓</Text>
+                  )}
+                </View>
+                <Text style={styles.cardDesc}>{m.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>        
 
         {/* Step 3 - Mode Options */}
         {selectedModeData && selectedModeData.options.length > 0 && (

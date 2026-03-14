@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -29,7 +30,10 @@ export default function ResultsScreen({ navigation, route }) {
     difficulty = 'easy',
     mode = 'endless',
     option = null,
+    attemptHistory = [],
   } = route.params || {};
+
+  const [showReview, setShowReview] = useState(false);
 
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
   const diffColor = DIFFICULTY_COLORS[difficulty];
@@ -43,14 +47,28 @@ export default function ResultsScreen({ navigation, route }) {
   };
 
   const getMotivation = () => {
-    if (accuracy >= 90) return 'Outstanding! You\'re reading like a pro! 🏆';
+    if (accuracy >= 90) return "Outstanding! You're reading like a pro! 🏆";
     if (accuracy >= 75) return 'Great work! Keep that momentum going! 🎵';
     if (accuracy >= 60) return 'Good effort! Practice makes perfect! 💪';
-    if (accuracy >= 45) return 'Keep going! You\'re improving! 🎶';
+    if (accuracy >= 45) return "Keep going! You're improving! 🎶";
     return 'Every musician starts somewhere. Keep practicing! 🌱';
   };
 
+  // Most missed notes for endless mode
+  const getMostMissed = () => {
+    const missed = {};
+    attemptHistory
+      .filter(a => !a.wasCorrect && a.answeredNote !== 'skipped')
+      .forEach(a => {
+        missed[a.correctNote] = (missed[a.correctNote] || 0) + 1;
+      });
+    return Object.entries(missed)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+  };
+
   const grade = getGrade();
+  const mostMissed = getMostMissed();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,6 +137,85 @@ export default function ResultsScreen({ navigation, route }) {
             <Text style={styles.statCardLbl}>Multiplier</Text>
           </View>
         </View>
+
+        {/* Most Missed — Endless only */}
+        {mode === 'endless' && mostMissed.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Most Missed Notes</Text>
+            <View style={styles.missedList}>
+              {mostMissed.map(([note, count]) => (
+                <View key={note} style={styles.missedRow}>
+                  <Text style={styles.missedNote}>{note}</Text>
+                  <View style={styles.missedBar}>
+                    <View style={[styles.missedBarFill, { width: `${Math.min(count * 20, 100)}%` }]} />
+                  </View>
+                  <Text style={styles.missedCount}>×{count}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Review Button — Challenge and Timed only */}
+        {(mode === 'challenge' || mode === 'timed') && attemptHistory.length > 0 && (
+          <TouchableOpacity
+            style={styles.reviewBtn}
+            onPress={() => setShowReview(!showReview)}
+          >
+            <Text style={styles.reviewBtnText}>
+              {showReview ? '▲ Hide Review' : '▼ Review Answers'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Review List */}
+        {showReview && (
+          <View style={styles.reviewList}>
+            <Text style={styles.sectionTitle}>Answer Review</Text>
+            {attemptHistory.map((attempt, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.reviewCard,
+                  attempt.wasCorrect ? styles.reviewCorrect : styles.reviewWrong,
+                ]}
+              >
+                {/* Left side */}
+                <View style={styles.reviewLeft}>
+                  <Text style={styles.reviewClef}>
+                    {attempt.clef.toUpperCase()} CLEF
+                  </Text>
+                  <View style={styles.reviewNoteRow}>
+                    <View style={styles.reviewNoteItem}>
+                      <Text style={styles.reviewNoteLabel}>Correct</Text>
+                      <Text style={styles.reviewNoteName}>
+                        {attempt.correctNote}
+                      </Text>
+                    </View>
+                    <Text style={styles.reviewArrow}>→</Text>
+                    <View style={styles.reviewNoteItem}>
+                      <Text style={styles.reviewNoteLabel}>You answered</Text>
+                      <Text style={[
+                        styles.reviewNoteName,
+                        !attempt.wasCorrect && { color: '#c84b2f' },
+                      ]}>
+                        {attempt.answeredNote}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Right side */}
+                <Text style={[
+                  styles.reviewResult,
+                  attempt.wasCorrect ? { color: '#2d7a4f' } : { color: '#c84b2f' },
+                ]}>
+                  {attempt.wasCorrect ? '✓' : '✗'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actions}>
@@ -244,6 +341,128 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     textAlign: 'center',
+  },
+  section: {
+    width: '100%',
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    opacity: 0.5,
+  },
+  missedList: {
+    width: '100%',
+    gap: 8,
+  },
+  missedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  missedNote: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    fontWeight: '700',
+    width: 32,
+    color: '#1a1a1a',
+  },
+  missedBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  missedBarFill: {
+    height: '100%',
+    backgroundColor: '#c84b2f',
+    borderRadius: 4,
+  },
+  missedCount: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    color: '#c84b2f',
+    width: 28,
+    textAlign: 'right',
+  },
+  reviewBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderWidth: 2,
+    borderColor: '#1a1a1a',
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  reviewBtnText: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    letterSpacing: 1,
+    color: '#1a1a1a',
+  },
+  reviewList: {
+    width: '100%',
+    gap: 8,
+  },
+  reviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderRadius: 6,
+    padding: 12,
+  },
+  reviewCorrect: {
+    borderColor: '#2d7a4f',
+    backgroundColor: '#f0faf4',
+  },
+  reviewWrong: {
+    borderColor: '#c84b2f',
+    backgroundColor: '#fff5f5',
+  },
+  reviewLeft: {
+    gap: 6,
+    flex: 1,
+  },
+  reviewClef: {
+    fontFamily: 'monospace',
+    fontSize: 9,
+    letterSpacing: 2,
+    opacity: 0.4,
+    textTransform: 'uppercase',
+  },
+  reviewNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  reviewNoteItem: {
+    gap: 2,
+  },
+  reviewNoteLabel: {
+    fontSize: 9,
+    opacity: 0.4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontFamily: 'monospace',
+  },
+  reviewNoteName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    fontFamily: 'monospace',
+  },
+  reviewArrow: {
+    fontSize: 16,
+    opacity: 0.3,
+    marginTop: 10,
+  },
+  reviewResult: {
+    fontSize: 28,
+    fontWeight: '900',
   },
   actions: {
     width: '100%',
