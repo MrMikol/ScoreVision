@@ -7,6 +7,8 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { useSettings } from '../context/SettingsContext';
+import { light, dark } from '../context/theme';
 
 const DIFFICULTIES = [
   {
@@ -82,6 +84,9 @@ export default function GameSetupScreen({ navigation }) {
   const [selectedOption, setSelectedOption] = useState(null);
   const [selectedInput, setSelectedInput] = useState(null);
 
+  const { darkMode } = useSettings();
+  const theme = darkMode ? dark : light;
+
   const selectedModeData = GAME_MODES.find(m => m.id === selectedMode);
 
   const canStart =
@@ -100,27 +105,28 @@ export default function GameSetupScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
 
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.text }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Game Setup</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Game Setup</Text>
           <View style={{ width: 60 }} />
         </View>
 
         {/* Step 1 - Difficulty */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>01 — Select Difficulty</Text>
+          <Text style={[styles.sectionTitle, { color: theme.muted }]}>01 — Select Difficulty</Text>
           <View style={styles.cards}>
             {DIFFICULTIES.map(d => (
               <TouchableOpacity
                 key={d.id}
                 style={[
                   styles.card,
+                  { backgroundColor: theme.card, borderColor: theme.border },
                   selectedDifficulty === d.id && {
                     borderColor: d.color,
                     backgroundColor: d.color + '10',
@@ -131,7 +137,8 @@ export default function GameSetupScreen({ navigation }) {
                 <View style={styles.cardTop}>
                   <Text style={[
                     styles.cardLabel,
-                    selectedDifficulty === d.id && { color: d.color }
+                    { color: theme.text },
+                    selectedDifficulty === d.id && { color: d.color },
                   ]}>
                     {d.label}
                   </Text>
@@ -139,7 +146,7 @@ export default function GameSetupScreen({ navigation }) {
                     <Text style={[styles.checkmark, { color: d.color }]}>✓</Text>
                   )}
                 </View>
-                <Text style={styles.cardDesc}>{d.description}</Text>
+                <Text style={[styles.cardDesc, { color: theme.muted }]}>{d.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -147,14 +154,18 @@ export default function GameSetupScreen({ navigation }) {
 
         {/* Step 2 - Game Mode */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>02 — Select Game Mode</Text>
+          <Text style={[styles.sectionTitle, { color: theme.muted }]}>02 — Select Game Mode</Text>
           <View style={styles.cards}>
             {GAME_MODES.map(m => (
               <TouchableOpacity
                 key={m.id}
                 style={[
                   styles.card,
-                  selectedMode === m.id && styles.cardActive,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                  selectedMode === m.id && {
+                    borderColor: '#2563a8',
+                    backgroundColor: '#2563a810',
+                  },
                 ]}
                 onPress={() => {
                   setSelectedMode(m.id);
@@ -164,7 +175,8 @@ export default function GameSetupScreen({ navigation }) {
                 <View style={styles.cardTop}>
                   <Text style={[
                     styles.cardLabel,
-                    selectedMode === m.id && styles.cardLabelActive
+                    { color: theme.text },
+                    selectedMode === m.id && styles.cardLabelActive,
                   ]}>
                     {m.label}
                   </Text>
@@ -172,46 +184,16 @@ export default function GameSetupScreen({ navigation }) {
                     <Text style={styles.checkmarkBlue}>✓</Text>
                   )}
                 </View>
-                <Text style={styles.cardDesc}>{m.description}</Text>
+                <Text style={[styles.cardDesc, { color: theme.muted }]}>{m.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
-        
-        {/* Step 4 - Input Method */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>04 — Input Method</Text>
-          <View style={styles.cards}>
-            {INPUT_METHODS.map(m => (
-              <TouchableOpacity
-                key={m.id}
-                style={[
-                  styles.card,
-                  selectedInput === m.id && styles.cardActive,
-                ]}
-                onPress={() => setSelectedInput(m.id)}
-              >
-                <View style={styles.cardTop}>
-                  <Text style={[
-                    styles.cardLabel,
-                    selectedInput === m.id && styles.cardLabelActive,
-                  ]}>
-                    {m.label}
-                  </Text>
-                  {selectedInput === m.id && (
-                    <Text style={styles.checkmarkBlue}>✓</Text>
-                  )}
-                </View>
-                <Text style={styles.cardDesc}>{m.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>        
 
         {/* Step 3 - Mode Options */}
         {selectedModeData && selectedModeData.options.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
+            <Text style={[styles.sectionTitle, { color: theme.muted }]}>
               {selectedMode === 'challenge' ? '03 — How many notes?' : '03 — How long?'}
             </Text>
             <View style={styles.optionRow}>
@@ -220,12 +202,14 @@ export default function GameSetupScreen({ navigation }) {
                   key={opt.value}
                   style={[
                     styles.optionBtn,
+                    { borderColor: theme.border, backgroundColor: theme.card },
                     selectedOption === opt.value && styles.optionBtnActive,
                   ]}
                   onPress={() => setSelectedOption(opt.value)}
                 >
                   <Text style={[
                     styles.optionText,
+                    { color: theme.text },
                     selectedOption === opt.value && styles.optionTextActive,
                   ]}>
                     {opt.label}
@@ -236,13 +220,48 @@ export default function GameSetupScreen({ navigation }) {
           </View>
         )}
 
+        {/* Step 4 - Input Method */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.muted }]}>04 — Select Input Method</Text>
+          <View style={styles.cards}>
+            {INPUT_METHODS.map(m => (
+              <TouchableOpacity
+                key={m.id}
+                style={[
+                  styles.card,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                  selectedInput === m.id && {
+                    borderColor: '#2563a8',
+                    backgroundColor: '#2563a810',
+                  },
+                ]}
+                onPress={() => setSelectedInput(m.id)}
+              >
+                <View style={styles.cardTop}>
+                  <Text style={[
+                    styles.cardLabel,
+                    { color: theme.text },
+                    selectedInput === m.id && styles.cardLabelActive,
+                  ]}>
+                    {m.label}
+                  </Text>
+                  {selectedInput === m.id && (
+                    <Text style={styles.checkmarkBlue}>✓</Text>
+                  )}
+                </View>
+                <Text style={[styles.cardDesc, { color: theme.muted }]}>{m.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Start Button */}
         <TouchableOpacity
           style={[styles.startBtn, !canStart && styles.startBtnDisabled]}
           onPress={handleStart}
           disabled={!canStart}
         >
-          <Text style={styles.startBtnText}>
+          <Text style={[styles.startBtnText, !canStart && { color: '#999' }]}>
             {canStart ? '▶  Start Game' : 'Complete setup above'}
           </Text>
         </TouchableOpacity>
@@ -255,7 +274,6 @@ export default function GameSetupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f0e8',
   },
   scroll: {
     padding: 20,
@@ -273,12 +291,10 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   title: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#1a1a1a',
     fontFamily: 'monospace',
   },
   section: {
@@ -289,22 +305,15 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    opacity: 0.5,
   },
   cards: {
     gap: 10,
   },
   card: {
-    backgroundColor: 'white',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
     borderRadius: 6,
     padding: 14,
     gap: 4,
-  },
-  cardActive: {
-    borderColor: '#2563a8',
-    backgroundColor: '#2563a810',
   },
   cardTop: {
     flexDirection: 'row',
@@ -314,14 +323,12 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   cardLabelActive: {
     color: '#2563a8',
   },
   cardDesc: {
     fontSize: 12,
-    color: '#666',
     lineHeight: 18,
   },
   checkmark: {
@@ -341,10 +348,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: 'white',
   },
   optionBtnActive: {
     borderColor: '#1a1a1a',
@@ -353,7 +358,6 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1a1a1a',
     fontFamily: 'monospace',
   },
   optionTextActive: {
@@ -367,7 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   startBtnDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#e0e0e0',
   },
   startBtnText: {
     color: '#f5f0e8',

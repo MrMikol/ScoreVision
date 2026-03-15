@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import StaffDisplay from '../components/StaffDisplay';
 import PianoKeyboard from '../components/PianoKeyboard';
 import {
@@ -18,27 +19,26 @@ import {
   getBaseName,
   hasAccidental,
 } from '../data/notes';
+import { useSettings } from '../context/SettingsContext';
+import { light, dark } from '../context/theme';
 
 // ─── CLEF LOGIC ──────────────────────────────────────────────────────────────
 const getClef = (difficulty, noteCount) => {
   if (difficulty === 'easy') return 'treble';
   if (difficulty === 'medium') return Math.random() < 0.5 ? 'treble' : 'bass';
-  // Hard: alternates every 3 notes
   return Math.floor(noteCount / 3) % 2 === 0 ? 'treble' : 'bass';
 };
 
 export default function GameScreen({ navigation, route }) {
-  const { 
-  difficulty = 'easy', 
-  mode = 'endless', 
-  option = null,
-  inputMethod = 'both',
-} = route.params || {};
+  const { difficulty = 'easy', mode = 'endless', option = null, inputMethod = 'both' } = route.params || {};
+
+  const { soundEnabled, darkMode } = useSettings();
+  const theme = darkMode ? dark : light;
 
   // ─── STATE ────────────────────────────────────────────────────────────────
   const [clef, setClef] = useState(() => getClef(difficulty, 0));
   const [currentNote, setCurrentNote] = useState(() =>
-    pickRandom(getPool(difficulty === 'easy' ? 'treble' : 'treble', difficulty))
+    pickRandom(getPool('treble', difficulty))
   );
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -54,6 +54,24 @@ export default function GameScreen({ navigation, route }) {
   // Timed mode
   const [timeLeft, setTimeLeft] = useState(mode === 'timed' ? option : null);
   const timerRef = useRef(null);
+
+  // ─── SOUND ────────────────────────────────────────────────────────────────
+  const playSound = async (type) => {
+    if (!soundEnabled) return;
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        type === 'correct'
+          ? require('../../assets/correct.mp3')
+          : require('../../assets/wrong.mp3')
+      );
+      await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) sound.unloadAsync();
+      });
+    } catch (e) {
+      console.log('Sound error:', e);
+    }
+  };
 
   // ─── TIMER ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -107,68 +125,101 @@ export default function GameScreen({ navigation, route }) {
 
   // ─── HANDLE ANSWER ────────────────────────────────────────────────────────
   const handleAnswer = useCallback((noteName) => {
-  if (!answering || gameOver) return;
+    if (!answering || gameOver) return;
 
-  const ENHARMONIC = {
-    'C#': 'Db', 'Db': 'C#',
-    'F#': 'Gb', 'Gb': 'F#',
-    'Eb': 'D#', 'D#': 'Eb',
-    'Ab': 'G#', 'G#': 'Ab',
-    'Bb': 'A#', 'A#': 'Bb',
-  };
+    const ENHARMONIC = {
+      'C#': 'Db', 'Db': 'C#',
+      'F#': 'Gb', 'Gb': 'F#',
+      'Eb': 'D#', 'D#': 'Eb',
+      'Ab': 'G#', 'G#': 'Ab',
+      'Bb': 'A#', 'A#': 'Bb',
+      'Fb': 'E',  'E':  'Fb',
+      'Cb': 'B',  'B':  'Cb',
+      'E#': 'F',  'F':  'E#',
+      'B#': 'C',  'C':  'B#',
+    };
 
-  const isAccidentalNote = hasAccidental(currentNote);
-  let isCorrect = false;
+    const isAccidentalNote = hasAccidental(currentNote);
+    let isCorrect = false;
 
-  if (isAccidentalNote) {
-    isCorrect =
-      noteName === currentNote.name ||
-      ENHARMONIC[noteName] === currentNote.name;
-  } else {
-    isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
-  }
+    if (isAccidentalNote) {
+      isCorrect =
+        noteName === currentNote.name ||
+        ENHARMONIC[noteName] === currentNote.name;
+    } else {
+      isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
+    }
 
-  setAnswering(false);
+    setAnswering(false);
 
-  // Log attempt to history
-  setAttemptHistory(prev => [...prev, {
-    clef,
-    correctNote: currentNote.name,
-    correctNoteObj: currentNote,
-    answeredNote: noteName,
-    wasCorrect: isCorrect,
-  }]);
+    // Log attempt
+    setAttemptHistory(prev => [...prev, {
+      clef,
+      correctNote: currentNote.name,
+      correctNoteObj: currentNote,
+      answeredNote: noteName,
+      wasCorrect: isCorrect,
+    }]);
 
-  // Increment note count first
-  const newNoteCount = noteCount + 1;
-  setNoteCount(newNoteCount);
+    // Increment note count
+    const newNoteCount = noteCount + 1;
+    setNoteCount(newNoteCount);
 
-  if (isCorrect) {
-    const newStreak = streak + 1;
-    const newCorrect = correct + 1;
-    const bonus = newStreak >= 3 ? 20 : 10;
-    const multiplier =
-      difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1.5 : 1;
+    if (isCorrect) {
+      const newStreak = streak + 1;
+      const newCorrect = correct + 1;
+      const bonus = newStreak >= 3 ? 20 : 10;
+      const multiplier =
+        difficulty === 'hard' ? 2 : difficulty === 'medium' ? 1.5 : 1;
 
-    setScore(prev => prev + Math.round(bonus * multiplier));
-    setStreak(newStreak);
-    setBestStreak(prev => Math.max(prev, newStreak));
-    setCorrect(newCorrect);
-    setFeedback('correct');
-  } else {
+      setScore(prev => prev + Math.round(bonus * multiplier));
+      setStreak(newStreak);
+      setBestStreak(prev => Math.max(prev, newStreak));
+      setCorrect(newCorrect);
+      setFeedback('correct');
+      playSound('correct');
+    } else {
+      setStreak(0);
+      setIncorrect(prev => prev + 1);
+      setFeedback('wrong');
+      playSound('wrong');
+    }
+
+    // Challenge end check
+    if (mode === 'challenge' && newNoteCount >= option) {
+      setTimeout(() => endGame(), 900);
+      return;
+    }
+
+    setTimeout(() => nextNote(newNoteCount), 900);
+  }, [answering, gameOver, currentNote, streak, correct, noteCount, difficulty, mode, option, nextNote, endGame, soundEnabled]);
+
+  // ─── SKIP ─────────────────────────────────────────────────────────────────
+  const handleSkip = () => {
+    if (gameOver) return;
     setStreak(0);
     setIncorrect(prev => prev + 1);
     setFeedback('wrong');
-  }
+    playSound('wrong');
 
-  // Challenge end check runs for BOTH correct and wrong answers
-  if (mode === 'challenge' && newNoteCount >= option) {
-    setTimeout(() => endGame(), 900);
-    return;
-  }
+    setAttemptHistory(prev => [...prev, {
+      clef,
+      correctNote: currentNote.name,
+      correctNoteObj: currentNote,
+      answeredNote: 'skipped',
+      wasCorrect: false,
+    }]);
 
-  setTimeout(() => nextNote(newNoteCount), 900);
-}, [answering, gameOver, currentNote, streak, correct, noteCount, difficulty, mode, option, nextNote, endGame]);
+    const newNoteCount = noteCount + 1;
+    setNoteCount(newNoteCount);
+
+    if (mode === 'challenge' && newNoteCount >= option) {
+      setTimeout(() => endGame(), 900);
+      return;
+    }
+
+    setTimeout(() => nextNote(newNoteCount), 900);
+  };
 
   // ─── END SESSION (Endless) ────────────────────────────────────────────────
   const handleEndSession = () => {
@@ -182,54 +233,26 @@ export default function GameScreen({ navigation, route }) {
     );
   };
 
-  // ─── SKIP ─────────────────────────────────────────────────────────────────
-  const handleSkip = () => {
-  if (gameOver) return;
-  setStreak(0);
-  setIncorrect(prev => prev + 1);
-  setFeedback('wrong');
-
-  // Log skip to history
-  setAttemptHistory(prev => [...prev, {
-    clef,
-    correctNote: currentNote.name,
-    correctNoteObj: currentNote,
-    answeredNote: 'skipped',
-    wasCorrect: false,
-  }]);
-
-  const newNoteCount = noteCount + 1;
-  setNoteCount(newNoteCount);
-
-  if (mode === 'challenge' && newNoteCount >= option) {
-    setTimeout(() => endGame(), 900);
-    return;
-  }
-
-  setTimeout(() => nextNote(newNoteCount), 900);
-};
-
   // ─── RENDER NOTE BUTTONS ──────────────────────────────────────────────────
   const renderNoteButtons = () => {
     if (hasAccidental(currentNote)) {
-      // Show both sharps and flats + natural notes
       return (
         <View style={styles.accidentalButtons}>
-          {/* Natural notes row */}
+          {/* Natural notes */}
           <View style={styles.noteButtons}>
             {NOTE_NAMES.map(note => (
               <TouchableOpacity
                 key={note}
-                style={styles.noteBtn}
+                style={[styles.noteBtn, { backgroundColor: theme.card, borderColor: theme.text }]}
                 onPress={() => handleAnswer(note)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.noteBtnText}>{note}</Text>
+                <Text style={[styles.noteBtnText, { color: theme.text }]}>{note}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Sharps row */}
+          {/* Sharps */}
           <View style={styles.noteButtons}>
             {ACCIDENTAL_NOTES.sharps.map(note => (
               <TouchableOpacity
@@ -243,7 +266,7 @@ export default function GameScreen({ navigation, route }) {
             ))}
           </View>
 
-          {/* Flats row */}
+          {/* Flats */}
           <View style={styles.noteButtons}>
             {ACCIDENTAL_NOTES.flats.map(note => (
               <TouchableOpacity
@@ -260,24 +283,23 @@ export default function GameScreen({ navigation, route }) {
       );
     }
 
-    // Normal note buttons
     return (
       <View style={styles.noteButtons}>
         {NOTE_NAMES.map(note => (
           <TouchableOpacity
             key={note}
-            style={styles.noteBtn}
+            style={[styles.noteBtn, { backgroundColor: theme.card, borderColor: theme.text }]}
             onPress={() => handleAnswer(note)}
             activeOpacity={0.7}
           >
-            <Text style={styles.noteBtnText}>{note}</Text>
+            <Text style={[styles.noteBtnText, { color: theme.text }]}>{note}</Text>
           </TouchableOpacity>
         ))}
       </View>
     );
   };
 
-  // ─── PROGRESS (Challenge mode) ────────────────────────────────────────────
+  // ─── PROGRESS ─────────────────────────────────────────────────────────────
   const progressPct = mode === 'challenge'
     ? (noteCount / option) * 100
     : mode === 'timed'
@@ -286,37 +308,37 @@ export default function GameScreen({ navigation, route }) {
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
 
         {/* Top Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.text }]}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.stats}>
             <View style={styles.stat}>
-              <Text style={styles.statVal}>{score}</Text>
-              <Text style={styles.statLbl}>Score</Text>
+              <Text style={[styles.statVal, { color: theme.text }]}>{score}</Text>
+              <Text style={[styles.statLbl, { color: theme.muted }]}>Score</Text>
             </View>
             <View style={styles.stat}>
               <Text style={[styles.statVal, streak >= 3 && styles.streakFire]}>
                 {streak}{streak >= 3 ? '🔥' : ''}
               </Text>
-              <Text style={styles.statLbl}>Streak</Text>
+              <Text style={[styles.statLbl, { color: theme.muted }]}>Streak</Text>
             </View>
             {mode === 'timed' && (
               <View style={styles.stat}>
-                <Text style={[styles.statVal, timeLeft <= 10 && styles.timerWarn]}>
+                <Text style={[styles.statVal, { color: theme.text }, timeLeft <= 10 && styles.timerWarn]}>
                   {timeLeft}s
                 </Text>
-                <Text style={styles.statLbl}>Time</Text>
+                <Text style={[styles.statLbl, { color: theme.muted }]}>Time</Text>
               </View>
             )}
             {mode === 'challenge' && (
               <View style={styles.stat}>
-                <Text style={styles.statVal}>{noteCount}/{option}</Text>
-                <Text style={styles.statLbl}>Notes</Text>
+                <Text style={[styles.statVal, { color: theme.text }]}>{noteCount}/{option}</Text>
+                <Text style={[styles.statLbl, { color: theme.muted }]}>Notes</Text>
               </View>
             )}
           </View>
@@ -329,10 +351,10 @@ export default function GameScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Difficulty + Clef badges */}
+        {/* Badges */}
         <View style={styles.badges}>
-          <Text style={styles.badge}>{difficulty.toUpperCase()}</Text>
-          <Text style={styles.badge}>{clef.toUpperCase()} CLEF</Text>
+          <Text style={[styles.badge, { color: theme.muted }]}>{difficulty.toUpperCase()}</Text>
+          <Text style={[styles.badge, { color: theme.muted }]}>{clef.toUpperCase()} CLEF</Text>
         </View>
 
         {/* Staff */}
@@ -355,18 +377,18 @@ export default function GameScreen({ navigation, route }) {
 
         {/* Divider */}
         {inputMethod === 'both' && (
-          <Text style={styles.divider}>— or play on piano —</Text>
+          <Text style={[styles.divider, { color: theme.muted }]}>— or play on piano —</Text>
         )}
 
         {/* Piano */}
         {(inputMethod === 'piano' || inputMethod === 'both') && (
           <PianoKeyboard onKeyPress={handleAnswer} />
-)}
+        )}
 
         {/* Bottom Buttons */}
         <View style={styles.bottomRow}>
-          <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-            <Text style={styles.skipText}>skip →</Text>
+          <TouchableOpacity style={[styles.skipBtn, { borderColor: theme.muted }]} onPress={handleSkip}>
+            <Text style={[styles.skipText, { color: theme.muted }]}>skip →</Text>
           </TouchableOpacity>
 
           {mode === 'endless' && (
@@ -384,7 +406,6 @@ export default function GameScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f0e8',
   },
   scroll: {
     padding: 16,
@@ -402,7 +423,6 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   stats: {
     flexDirection: 'row',
@@ -412,14 +432,12 @@ const styles = StyleSheet.create({
   statVal: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1a1a1a',
     fontFamily: 'monospace',
   },
   streakFire: { color: '#c84b2f' },
   timerWarn: { color: '#c84b2f' },
   statLbl: {
     fontSize: 10,
-    opacity: 0.5,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -443,7 +461,6 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 11,
     letterSpacing: 2,
-    opacity: 0.4,
   },
   staffWrap: {
     width: '100%',
@@ -478,9 +495,7 @@ const styles = StyleSheet.create({
   noteBtn: {
     width: 44,
     height: 52,
-    backgroundColor: 'white',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
     borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
@@ -496,12 +511,10 @@ const styles = StyleSheet.create({
   noteBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   divider: {
     fontFamily: 'monospace',
     fontSize: 11,
-    opacity: 0.4,
     letterSpacing: 1,
   },
   bottomRow: {
@@ -513,13 +526,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.25)',
     borderRadius: 999,
   },
   skipText: {
     fontFamily: 'monospace',
     fontSize: 13,
-    color: 'rgba(0,0,0,0.4)',
   },
   endBtn: {
     paddingVertical: 8,

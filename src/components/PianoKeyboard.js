@@ -1,4 +1,5 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useSettings } from '../context/SettingsContext';
 
 const WHITE_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
@@ -18,6 +19,7 @@ const BLACK_KEY_WIDTH = 28;
 const BLACK_KEY_HEIGHT = 75;
 
 export default function PianoKeyboard({ onKeyPress }) {
+  const { showPianoLabels } = useSettings();
   const getBlackKeyLeft = (afterIndex) => {
     // +1 accounts for the marginHorizontal: 1 on each white key
     const whiteKeyWithMargin = WHITE_KEY_WIDTH + 2;
@@ -36,7 +38,9 @@ export default function PianoKeyboard({ onKeyPress }) {
             onPress={() => onKeyPress(note)}
             activeOpacity={0.7}
           >
-            <Text style={styles.whiteKeyLabel}>{note}</Text>
+            {showPianoLabels && (
+              <Text style={styles.whiteKeyLabel}>{note}</Text>
+            )}
           </TouchableOpacity>
         ))}
 
@@ -51,7 +55,9 @@ export default function PianoKeyboard({ onKeyPress }) {
             onPress={() => onKeyPress(note)}
             activeOpacity={0.7}
           >
-            <Text style={styles.blackKeyLabel}>{label}</Text>
+            {showPianoLabels && (
+              <Text style={styles.blackKeyLabel}>{label}</Text>
+            )}
           </TouchableOpacity>
         ))}
 

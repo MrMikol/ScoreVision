@@ -1,5 +1,7 @@
 import { View, StyleSheet } from 'react-native';
-import Svg, { Line, Ellipse, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Line, Ellipse, Text as SvgText } from 'react-native-svg';
+import { useSettings } from '../context/SettingsContext';
+import { light, dark } from '../context/theme';
 
 const STAFF_LINES = 5;
 const LINE_SPACING = 18;
@@ -10,6 +12,9 @@ const CLEF_X = 20;
 const NOTE_X = 180;
 
 export default function StaffDisplay({ note, clef = 'treble', small = false }) {
+  const { darkMode } = useSettings();
+  const theme = darkMode ? dark : light;
+
   const staffWidth = small ? 160 : 320;
   const staffHeight = small ? 80 : 160;
   const scale = small ? 0.5 : 1;
@@ -33,7 +38,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
         y1={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
         x2={staffWidth - 5}
         y2={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
-        stroke="#1a1a1a"
+        stroke={theme.text}
         strokeWidth={small ? 0.75 : 1.5}
       />
     ));
@@ -43,6 +48,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
     const lines = [];
     const ledgerWidth = SCALED_NOTE_R_X * 2.8;
 
+    // Below staff
     for (let l = -1; l >= Math.floor(position); l--) {
       if (l % 1 === 0) {
         const y = getNoteY(l);
@@ -53,13 +59,14 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
             y1={y}
             x2={SCALED_NOTE_X + ledgerWidth / 2}
             y2={y}
-            stroke="#1a1a1a"
+            stroke={theme.text}
             strokeWidth={small ? 0.75 : 1.5}
           />
         );
       }
     }
 
+    // Above staff
     for (let l = 5; l <= Math.ceil(position); l++) {
       if (l % 1 === 0) {
         const y = getNoteY(l);
@@ -70,7 +77,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
             y1={y}
             x2={SCALED_NOTE_X + ledgerWidth / 2}
             y2={y}
-            stroke="#1a1a1a"
+            stroke={theme.text}
             strokeWidth={small ? 0.75 : 1.5}
           />
         );
@@ -93,7 +100,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
           cy={noteY}
           rx={SCALED_NOTE_R_X}
           ry={SCALED_NOTE_R_Y}
-          fill="#1a1a1a"
+          fill={theme.text}
           transform={`rotate(-15, ${SCALED_NOTE_X}, ${noteY})`}
         />
 
@@ -103,27 +110,29 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
           y1={noteY}
           x2={stemDir === -1 ? SCALED_NOTE_X + SCALED_NOTE_R_X - 1 : SCALED_NOTE_X - SCALED_NOTE_R_X + 1}
           y2={noteY + stemDir * stemLen}
-          stroke="#1a1a1a"
+          stroke={theme.text}
           strokeWidth={small ? 0.9 : 1.8}
         />
 
-        {/* Accidental */}
+        {/* Accidental — sharp */}
         {note?.accidental === 'sharp' && (
           <SvgText
             x={SCALED_NOTE_X - SCALED_NOTE_R_X * 3}
             y={noteY + 7 * scale}
             fontSize={small ? 11 : 20}
-            fill="#1a1a1a"
+            fill={theme.text}
           >
             ♯
           </SvgText>
         )}
+
+        {/* Accidental — flat */}
         {note?.accidental === 'flat' && (
           <SvgText
             x={SCALED_NOTE_X - SCALED_NOTE_R_X * 3}
             y={noteY + 7 * scale}
             fontSize={small ? 11 : 20}
-            fill="#1a1a1a"
+            fill={theme.text}
           >
             ♭
           </SvgText>
@@ -139,7 +148,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
           x={SCALED_CLEF_X}
           y={SCALED_STAFF_TOP + 52 * scale}
           fontSize={small ? 44 : 88}
-          fill="#1a1a1a"
+          fill={theme.text}
         >
           𝄞
         </SvgText>
@@ -150,7 +159,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
           x={SCALED_CLEF_X}
           y={SCALED_STAFF_TOP + 34 * scale}
           fontSize={small ? 36 : 72}
-          fill="#1a1a1a"
+          fill={theme.text}
         >
           𝄢
         </SvgText>
@@ -159,7 +168,7 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <Svg width={staffWidth} height={staffHeight}>
         {renderStaffLines()}
         {note && renderLedgerLines(note.position)}
@@ -172,11 +181,9 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 4,
     padding: 12,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
   },
 });

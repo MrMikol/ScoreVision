@@ -1,4 +1,3 @@
-import StaffDisplay from '../components/StaffDisplay';
 import { useState } from 'react';
 import {
   View,
@@ -8,6 +7,9 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import StaffDisplay from '../components/StaffDisplay';
+import { useSettings } from '../context/SettingsContext';
+import { light, dark } from '../context/theme';
 
 const DIFFICULTY_COLORS = {
   easy: '#2d7a4f',
@@ -36,6 +38,9 @@ export default function ResultsScreen({ navigation, route }) {
 
   const [showReview, setShowReview] = useState(false);
 
+  const { darkMode } = useSettings();
+  const theme = darkMode ? dark : light;
+
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
   const diffColor = DIFFICULTY_COLORS[difficulty];
 
@@ -55,7 +60,6 @@ export default function ResultsScreen({ navigation, route }) {
     return 'Every musician starts somewhere. Keep practicing! 🌱';
   };
 
-  // Most missed notes for endless mode
   const getMostMissed = () => {
     const missed = {};
     attemptHistory
@@ -72,20 +76,20 @@ export default function ResultsScreen({ navigation, route }) {
   const mostMissed = getMostMissed();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Session Complete</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Session Complete</Text>
           <View style={styles.modeBadgeRow}>
             <View style={[styles.modeBadge, { borderColor: diffColor }]}>
               <Text style={[styles.modeBadgeText, { color: diffColor }]}>
                 {difficulty.toUpperCase()}
               </Text>
             </View>
-            <View style={styles.modeBadge}>
-              <Text style={styles.modeBadgeText}>
+            <View style={[styles.modeBadge, { borderColor: theme.border }]}>
+              <Text style={[styles.modeBadgeText, { color: theme.text }]}>
                 {MODE_LABELS[mode]}
                 {option ? `  ·  ${mode === 'timed' ? option + 's' : option + ' notes'}` : ''}
               </Text>
@@ -94,60 +98,56 @@ export default function ResultsScreen({ navigation, route }) {
         </View>
 
         {/* Grade Card */}
-        <View style={styles.gradeCard}>
+        <View style={[styles.gradeCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <Text style={[styles.gradeText, { color: grade.color }]}>
             {grade.label}
           </Text>
-          <Text style={styles.accuracyText}>{accuracy}%</Text>
-          <Text style={styles.accuracyLabel}>Accuracy</Text>
-          <Text style={styles.motivation}>{getMotivation()}</Text>
+          <Text style={[styles.accuracyText, { color: theme.text }]}>{accuracy}%</Text>
+          <Text style={[styles.accuracyLabel, { color: theme.muted }]}>Accuracy</Text>
+          <Text style={[styles.motivation, { color: theme.muted }]}>{getMotivation()}</Text>
         </View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statCardVal}>{score}</Text>
-            <Text style={styles.statCardLbl}>Total Score</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.statCardVal, { color: theme.text }]}>{score}</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Total Score</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statCardVal}>{total}</Text>
-            <Text style={styles.statCardLbl}>Notes Played</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.statCardVal, { color: theme.text }]}>{total}</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Notes Played</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statCardVal, { color: '#2d7a4f' }]}>
-              {correct}
-            </Text>
-            <Text style={styles.statCardLbl}>Correct</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.statCardVal, { color: '#2d7a4f' }]}>{correct}</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Correct</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statCardVal, { color: '#c84b2f' }]}>
-              {incorrect}
-            </Text>
-            <Text style={styles.statCardLbl}>Incorrect</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.statCardVal, { color: '#c84b2f' }]}>{incorrect}</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Incorrect</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <Text style={[styles.statCardVal, { color: '#c84b2f' }]}>
               {bestStreak}🔥
             </Text>
-            <Text style={styles.statCardLbl}>Best Streak</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Best Streak</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statCardVal}>
+          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.statCardVal, { color: theme.text }]}>
               {difficulty === 'hard' ? '×2' : difficulty === 'medium' ? '×1.5' : '×1'}
             </Text>
-            <Text style={styles.statCardLbl}>Multiplier</Text>
+            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Multiplier</Text>
           </View>
         </View>
 
         {/* Most Missed — Endless only */}
         {mode === 'endless' && mostMissed.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Most Missed Notes</Text>
+            <Text style={[styles.sectionTitle, { color: theme.muted }]}>Most Missed Notes</Text>
             <View style={styles.missedList}>
               {mostMissed.map(([note, count]) => (
                 <View key={note} style={styles.missedRow}>
-                  <Text style={styles.missedNote}>{note}</Text>
-                  <View style={styles.missedBar}>
+                  <Text style={[styles.missedNote, { color: theme.text }]}>{note}</Text>
+                  <View style={[styles.missedBar, { backgroundColor: theme.border }]}>
                     <View style={[styles.missedBarFill, { width: `${Math.min(count * 20, 100)}%` }]} />
                   </View>
                   <Text style={styles.missedCount}>×{count}</Text>
@@ -160,10 +160,10 @@ export default function ResultsScreen({ navigation, route }) {
         {/* Review Button — Challenge and Timed only */}
         {(mode === 'challenge' || mode === 'timed') && attemptHistory.length > 0 && (
           <TouchableOpacity
-            style={styles.reviewBtn}
+            style={[styles.reviewBtn, { borderColor: theme.text }]}
             onPress={() => setShowReview(!showReview)}
           >
-            <Text style={styles.reviewBtnText}>
+            <Text style={[styles.reviewBtnText, { color: theme.text }]}>
               {showReview ? '▲ Hide Review' : '▼ Review Answers'}
             </Text>
           </TouchableOpacity>
@@ -172,7 +172,7 @@ export default function ResultsScreen({ navigation, route }) {
         {/* Review List */}
         {showReview && (
           <View style={styles.reviewList}>
-            <Text style={styles.sectionTitle}>Answer Review</Text>
+            <Text style={[styles.sectionTitle, { color: theme.muted }]}>Answer Review</Text>
             {attemptHistory.map((attempt, index) => (
               <View
                 key={index}
@@ -230,17 +230,21 @@ export default function ResultsScreen({ navigation, route }) {
         {/* Action Buttons */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.btnPrimary}
+            style={[styles.btnPrimary, { backgroundColor: theme.btnPrimary }]}
             onPress={() => navigation.replace('GameSetup')}
           >
-            <Text style={styles.btnPrimaryText}>▶  Play Again</Text>
+            <Text style={[styles.btnPrimaryText, { color: theme.btnPrimaryText }]}>
+              ▶  Play Again
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.btnSecondary}
+            style={[styles.btnSecondary, { borderColor: theme.btnSecondaryBorder }]}
             onPress={() => navigation.navigate('Home')}
           >
-            <Text style={styles.btnSecondaryText}>⌂  Home</Text>
+            <Text style={[styles.btnSecondaryText, { color: theme.btnSecondaryText }]}>
+              ⌂  Home
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -252,7 +256,6 @@ export default function ResultsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f0e8',
   },
   scroll: {
     padding: 20,
@@ -268,7 +271,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#1a1a1a',
     letterSpacing: -0.5,
   },
   modeBadgeRow: {
@@ -279,20 +281,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: '#1a1a1a',
     borderRadius: 999,
   },
   modeBadgeText: {
     fontFamily: 'monospace',
     fontSize: 11,
     letterSpacing: 1,
-    color: '#1a1a1a',
   },
   gradeCard: {
     width: '100%',
-    backgroundColor: 'white',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
     borderRadius: 6,
     padding: 28,
     alignItems: 'center',
@@ -306,18 +304,15 @@ const styles = StyleSheet.create({
   accuracyText: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   accuracyLabel: {
     fontFamily: 'monospace',
     fontSize: 11,
     letterSpacing: 2,
-    opacity: 0.4,
     textTransform: 'uppercase',
   },
   motivation: {
     fontSize: 14,
-    color: '#444',
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
@@ -331,9 +326,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '28%',
-    backgroundColor: 'white',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
     borderRadius: 6,
     padding: 14,
     alignItems: 'center',
@@ -342,12 +335,10 @@ const styles = StyleSheet.create({
   statCardVal: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1a1a1a',
     fontFamily: 'monospace',
   },
   statCardLbl: {
     fontSize: 10,
-    opacity: 0.5,
     letterSpacing: 1,
     textTransform: 'uppercase',
     textAlign: 'center',
@@ -361,7 +352,6 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    opacity: 0.5,
   },
   missedList: {
     width: '100%',
@@ -377,12 +367,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     width: 32,
-    color: '#1a1a1a',
   },
   missedBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#e0e0e0',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -402,7 +390,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 14,
     borderWidth: 2,
-    borderColor: '#1a1a1a',
     borderRadius: 4,
     alignItems: 'center',
   },
@@ -410,7 +397,6 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 13,
     letterSpacing: 1,
-    color: '#1a1a1a',
   },
   reviewList: {
     width: '100%',
@@ -420,7 +406,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
     borderWidth: 2,
     borderRadius: 6,
     padding: 12,
@@ -432,6 +417,9 @@ const styles = StyleSheet.create({
   reviewWrong: {
     borderColor: '#c84b2f',
     backgroundColor: '#fff5f5',
+  },
+  reviewStaff: {
+    marginBottom: 10,
   },
   reviewLeft: {
     gap: 6,
@@ -479,13 +467,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   btnPrimary: {
-    backgroundColor: '#1a1a1a',
     paddingVertical: 18,
     borderRadius: 4,
     alignItems: 'center',
   },
   btnPrimaryText: {
-    color: '#f5f0e8',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
@@ -496,15 +482,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1a1a1a',
   },
   btnSecondaryText: {
-    color: '#1a1a1a',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
-  },
-  reviewStaff: {
-    marginBottom: 10,
   },
 });
