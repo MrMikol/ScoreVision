@@ -13,14 +13,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.michaelt.scorevision"
+      "bundleIdentifier": "com.michaeltan.scorevision"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#f5f0e8"
       },
-      "package": "com.michaelt.scorevision"
+      "package": "com.michaeltan.scorevision"
     },
     "web": {
       "favicon": "./assets/icon.png"

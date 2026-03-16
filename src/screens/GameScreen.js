@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { startSession, endSession } from '../services/analytics';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ import {
 import { useSettings } from '../context/SettingsContext';
 import { light, dark } from '../context/theme';
 
+const sessionRef = useRef(null);
 // ─── CLEF LOGIC ──────────────────────────────────────────────────────────────
 const getClef = (difficulty, noteCount) => {
   if (difficulty === 'easy') return 'treble';
@@ -100,19 +102,38 @@ export default function GameScreen({ navigation, route }) {
   // Navigate to results when gameOver
   useEffect(() => {
     if (gameOver) {
-      navigation.replace('Results', {
-        score,
-        correct,
-        incorrect,
-        bestStreak,
-        total: correct + incorrect,
-        difficulty,
-        mode,
-        option,
-        attemptHistory,
-      });
+      const finishSession = async () => {
+        await endSession(sessionRef.current, {
+          total: correct + incorrect,
+          correct,
+          incorrect,
+          bestStreak,
+        });
+
+        navigation.replace('Results', {
+          score,
+          correct,
+          incorrect,
+          bestStreak,
+          total: correct + incorrect,
+          difficulty,
+          mode,
+          option,
+          attemptHistory,
+        });
+      };
+      finishSession();
     }
   }, [gameOver]);
+
+  // Start analytics session
+  useEffect(() => {
+    const initSession = async () => {
+      const id = await startSession(difficulty, mode);
+      sessionRef.current = id;
+    };
+    initSession();
+  }, []);
 
   // ─── NEXT NOTE ────────────────────────────────────────────────────────────
   const nextNote = useCallback((count) => {
