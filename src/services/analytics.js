@@ -177,16 +177,7 @@ export const getWeeklySummary = async () => {
 
 // Check if a week has passed since last sync
 export const shouldSync = async () => {
-  try {
-    const lastSync = await AsyncStorage.getItem(KEY_LAST_SYNC);
-    if (!lastSync) return true;
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return new Date(lastSync) < oneWeekAgo;
-  } catch (e) {
-    return false;
-  }
+  return true; // temporary for testing
 };
 
 // Mark sync as done
