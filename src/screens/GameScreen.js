@@ -4,10 +4,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAudioPlayer } from 'expo-audio';
 import StaffDisplay from '../components/StaffDisplay';
 import PianoKeyboard from '../components/PianoKeyboard';

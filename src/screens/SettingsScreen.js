@@ -4,9 +4,9 @@ import {
   TouchableOpacity,
   Switch,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
 
 const VERSION = '1.0.0';
