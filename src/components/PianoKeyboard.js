@@ -5,11 +5,11 @@ const WHITE_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 // Black keys with correct enharmonic names
 // Dual labels for commonly used enharmonic pairs
 const BLACK_KEYS = [
-  { note: 'C#', label: 'C#\nDb', after: 0 },  // between C and D
-  { note: 'Eb', label: 'Eb',     after: 1 },  // between D and E
-  { note: 'F#', label: 'F#\nGb', after: 3 },  // between F and G
-  { note: 'Ab', label: 'Ab',     after: 4 },  // between G and A
-  { note: 'Bb', label: 'Bb',     after: 5 },  // between A and B
+  { note: 'C#', label: 'C#\nDb', after: 0 },
+  { note: 'Eb', label: 'D#\nEb', after: 1 },
+  { note: 'F#', label: 'F#\nGb', after: 3 },
+  { note: 'Ab', label: 'G#\nAb', after: 4 },
+  { note: 'Bb', label: 'A#\nBb', after: 5 },
 ];
 
 const WHITE_KEY_WIDTH = 44;
