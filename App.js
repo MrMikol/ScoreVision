@@ -10,6 +10,7 @@ import GameScreen from './src/screens/GameScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
+import LearnScreen from './src/screens/LearnScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,7 @@ export default function App() {
           <Stack.Screen name="Game" component={GameScreen} />
           <Stack.Screen name="Results" component={ResultsScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Learn" component={LearnScreen} />
           <Stack.Screen name="History" component={HistoryScreen} />
         </Stack.Navigator>
       </NavigationContainer>

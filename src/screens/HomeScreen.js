@@ -31,6 +31,15 @@ export default function HomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={[styles.btnSecondary, { borderColor: theme.btnSecondaryBorder }]}
+          onPress={() => navigation.navigate('Learn')}
+        >
+          <Text style={[styles.btnSecondaryText, { color: theme.btnSecondaryText }]}>
+            𝄞  Learn
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.btnSecondary, { borderColor: theme.btnSecondaryBorder }]}
           onPress={() => navigation.navigate('Settings')}
         >
           <Text style={[styles.btnSecondaryText, { color: theme.btnSecondaryText }]}>
