@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { startSession, endSession } from '../services/analytics';
 import {
   View,
   Text,
