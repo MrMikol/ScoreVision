@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import StaffDisplay from '../components/StaffDisplay';
 import PianoKeyboard from '../components/PianoKeyboard';
 import {
@@ -23,7 +23,6 @@ import {
 import { useSettings } from '../context/SettingsContext';
 import { light, dark } from '../context/theme';
 
-const sessionRef = useRef(null);
 // ─── CLEF LOGIC ──────────────────────────────────────────────────────────────
 const getClef = (difficulty, noteCount) => {
   if (difficulty === 'easy') return 'treble';
@@ -34,7 +33,7 @@ const getClef = (difficulty, noteCount) => {
 export default function GameScreen({ navigation, route }) {
   const { difficulty = 'easy', mode = 'endless', option = null, inputMethod = 'both' } = route.params || {};
 
-  const { soundEnabled, darkMode } = useSettings();
+  const { soundEnabled, darkMode, showPianoLabels } = useSettings();
   const theme = darkMode ? dark : light;
 
   // ─── STATE ────────────────────────────────────────────────────────────────
@@ -56,20 +55,23 @@ export default function GameScreen({ navigation, route }) {
   // Timed mode
   const [timeLeft, setTimeLeft] = useState(mode === 'timed' ? option : null);
   const timerRef = useRef(null);
+  const sessionRef = useRef(null);
 
   // ─── SOUND ────────────────────────────────────────────────────────────────
-  const playSound = async (type) => {
+  
+  const correctPlayer = useAudioPlayer(require('../../assets/correct.mp3'));
+  const wrongPlayer = useAudioPlayer(require('../../assets/wrong.mp3'));
+
+  const playSound = (type) => {
     if (!soundEnabled) return;
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        type === 'correct'
-          ? require('../../assets/correct.mp3')
-          : require('../../assets/wrong.mp3')
-      );
-      await sound.playAsync();
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) sound.unloadAsync();
-      });
+      if (type === 'correct') {
+        correctPlayer.seekTo(0);
+        correctPlayer.play();
+      } else {
+        wrongPlayer.seekTo(0);
+        wrongPlayer.play();
+      }
     } catch (e) {
       console.log('Sound error:', e);
     }
@@ -148,6 +150,10 @@ export default function GameScreen({ navigation, route }) {
   const handleAnswer = useCallback((noteName) => {
     if (!answering || gameOver) return;
 
+    // Capture current note immediately before any state changes
+    const noteBeingAnswered = currentNote;
+    const clefBeingAnswered = clef;
+
     const ENHARMONIC = {
       'C#': 'Db', 'Db': 'C#',
       'F#': 'Gb', 'Gb': 'F#',
@@ -160,24 +166,24 @@ export default function GameScreen({ navigation, route }) {
       'B#': 'C',  'C':  'B#',
     };
 
-    const isAccidentalNote = hasAccidental(currentNote);
+    const isAccidentalNote = hasAccidental(noteBeingAnswered);
     let isCorrect = false;
 
     if (isAccidentalNote) {
       isCorrect =
-        noteName === currentNote.name ||
-        ENHARMONIC[noteName] === currentNote.name;
+        noteName === noteBeingAnswered.name ||
+        ENHARMONIC[noteName] === noteBeingAnswered.name;
     } else {
-      isCorrect = getBaseName(noteName) === getBaseName(currentNote.name);
+      isCorrect = getBaseName(noteName) === getBaseName(noteBeingAnswered.name);
     }
 
     setAnswering(false);
 
-    // Log attempt
+    // Log attempt using captured values
     setAttemptHistory(prev => [...prev, {
-      clef,
-      correctNote: currentNote.name,
-      correctNoteObj: currentNote,
+      clef: clefBeingAnswered,
+      correctNote: noteBeingAnswered.name,
+      correctNoteObj: noteBeingAnswered,
       answeredNote: noteName,
       wasCorrect: isCorrect,
     }]);
@@ -218,15 +224,20 @@ export default function GameScreen({ navigation, route }) {
   // ─── SKIP ─────────────────────────────────────────────────────────────────
   const handleSkip = () => {
     if (gameOver) return;
+
+    // Capture current note immediately
+    const noteBeingAnswered = currentNote;
+    const clefBeingAnswered = clef;
+
     setStreak(0);
     setIncorrect(prev => prev + 1);
     setFeedback('wrong');
     playSound('wrong');
 
     setAttemptHistory(prev => [...prev, {
-      clef,
-      correctNote: currentNote.name,
-      correctNoteObj: currentNote,
+      clef: clefBeingAnswered,
+      correctNote: noteBeingAnswered.name,
+      correctNoteObj: noteBeingAnswered,
       answeredNote: 'skipped',
       wasCorrect: false,
     }]);
@@ -403,7 +414,7 @@ export default function GameScreen({ navigation, route }) {
 
         {/* Piano */}
         {(inputMethod === 'piano' || inputMethod === 'both') && (
-          <PianoKeyboard onKeyPress={handleAnswer} />
+          <PianoKeyboard onKeyPress={handleAnswer} showPianoLabels={showPianoLabels} />
         )}
 
         {/* Bottom Buttons */}

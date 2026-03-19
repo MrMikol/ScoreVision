@@ -28,6 +28,9 @@
     "assets": [
       "./assets/correct.mp3",
       "./assets/wrong.mp3"
+    ],
+    "plugins": [
+      "expo-audio"
     ]
   }
 }

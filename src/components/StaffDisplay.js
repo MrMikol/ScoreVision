@@ -16,10 +16,10 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
   const theme = darkMode ? dark : light;
 
   const staffWidth = small ? 160 : 320;
-  const staffHeight = small ? 80 : 160;
+  const staffHeight = small ? 100 : 160;
   const scale = small ? 0.5 : 1;
 
-  const SCALED_STAFF_TOP = STAFF_TOP * scale;
+  const SCALED_STAFF_TOP = small ? 30 : STAFF_TOP;
   const SCALED_LINE_SPACING = LINE_SPACING * scale;
   const SCALED_NOTE_R_X = NOTE_RADIUS_X * scale;
   const SCALED_NOTE_R_Y = NOTE_RADIUS_Y * scale;
