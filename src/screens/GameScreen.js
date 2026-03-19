@@ -22,6 +22,7 @@ import {
 } from '../data/notes';
 import { useSettings } from '../context/SettingsContext';
 import { light, dark } from '../context/theme';
+import { startSession, endSession, saveGameResult } from '../services/analytics';
 
 // ─── CLEF LOGIC ──────────────────────────────────────────────────────────────
 const getClef = (difficulty, noteCount) => {
@@ -109,6 +110,17 @@ export default function GameScreen({ navigation, route }) {
           total: correct + incorrect,
           correct,
           incorrect,
+          bestStreak,
+        });
+
+        await saveGameResult({   // ← add this
+          difficulty,
+          mode,
+          option,
+          score,
+          correct,
+          incorrect,
+          total: correct + incorrect,
           bestStreak,
         });
 

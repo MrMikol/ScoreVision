@@ -40,7 +40,15 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       {/* Footer */}
-      <Text style={[styles.footer, { color: theme.muted }]}>v1.0.0</Text>
+      <View style={styles.footerRow}>
+        <TouchableOpacity
+          style={styles.historyBtn}
+          onPress={() => navigation.navigate('History')}
+        >
+          <Text style={[styles.historyBtnText, { color: theme.muted }]}>📊 Recent Games</Text>
+        </TouchableOpacity>
+        <Text style={[styles.footer, { color: theme.muted }]}>v1.0.0</Text>
+      </View>
 
     </SafeAreaView>
   );
@@ -103,6 +111,21 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   footer: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  footerRow: {
+  alignItems: 'center',
+  gap: 8,
+  },
+  historyBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 999,
+  },
+  historyBtnText: {
     fontSize: 12,
     fontFamily: 'monospace',
   },

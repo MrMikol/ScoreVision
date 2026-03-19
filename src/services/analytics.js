@@ -196,3 +196,44 @@ export const markSynced = async () => {
     console.log('markSynced error:', e);
   }
 };
+
+// ─── GAME HISTORY ─────────────────────────────────────────────────────────────
+
+const KEY_GAME_HISTORY = 'scorevision_game_history';
+
+export const saveGameResult = async (result) => {
+  try {
+    const history = await getGameHistory();
+    
+    // Add new result at the start
+    history.unshift({
+      id: Math.random().toString(36).substring(2, 10),
+      date: new Date().toISOString(),
+      difficulty: result.difficulty,
+      mode: result.mode,
+      option: result.option,
+      score: result.score,
+      correct: result.correct,
+      incorrect: result.incorrect,
+      total: result.total,
+      accuracy: result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0,
+      bestStreak: result.bestStreak,
+    });
+
+    // Keep only last 10
+    const trimmed = history.slice(0, 10);
+    await AsyncStorage.setItem(KEY_GAME_HISTORY, JSON.stringify(trimmed));
+  } catch (e) {
+    console.log('saveGameResult error:', e);
+  }
+};
+
+export const getGameHistory = async () => {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_GAME_HISTORY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.log('getGameHistory error:', e);
+    return [];
+  }
+};
