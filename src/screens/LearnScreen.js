@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -120,14 +120,14 @@ export default function LearnScreen({ navigation }) {
   const [clef, setClef] = useState('treble');
   const [selectedNote, setSelectedNote] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
-  const [webViewRef, setWebViewRef] = useState(null);
+  const webViewRef = useRef(null);
 
   const notes = clef === 'treble' ? TREBLE_LEARN_NOTES : BASS_LEARN_NOTES;
 
   const handleNotePress = (note) => {
     setSelectedNote(note);
-    if (webViewRef) {
-      webViewRef.postMessage(String(note.freq));
+    if (webViewRef.current) {
+        webViewRef.current.postMessage(String(note.freq));
     }
   };
 
@@ -135,13 +135,15 @@ export default function LearnScreen({ navigation }) {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
 
       {/* Hidden WebView for audio */}
-      <WebView
-        ref={ref => setWebViewRef(ref)}
-        source={{ html: toneHTML }}
-        style={{ width: 0, height: 0 }}
-        javaScriptEnabled
-        onMessage={() => {}}
-      />
+      <View style={{ width: 0, height: 0, overflow: 'hidden', position: 'absolute' }}>
+        <WebView
+            ref={webViewRef}
+            source={{ html: toneHTML }}
+            style={{ width: 1, height: 1 }}
+            javaScriptEnabled
+            onMessage={() => {}}
+        />
+      </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
 
@@ -318,6 +320,7 @@ const styles = StyleSheet.create({
   },
   notesTab: {
     gap: 16,
+    width: '100%',
   },
   pillGroup: {
     flexDirection: 'row',
@@ -392,6 +395,7 @@ const styles = StyleSheet.create({
   },
   theoryTab: {
     gap: 10,
+    width: '100%',
   },
   sectionCard: {
     borderWidth: 2,
