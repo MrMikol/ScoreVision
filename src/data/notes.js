@@ -128,7 +128,7 @@ export const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
 // Only the 5 real black keys, no enharmonic duplicates
 export const ACCIDENTAL_NOTES = {
-  sharps: ['F#', 'C#'],
+  sharps: ['F#', 'C#', 'G#', 'D#', 'A#'],
   flats: ['Bb', 'Eb', 'Ab', 'Db', 'Gb'],
 };
 
