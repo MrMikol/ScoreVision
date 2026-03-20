@@ -5,17 +5,91 @@ import {
   Switch,
   StyleSheet,
   ScrollView,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
+import { scheduleReminder, cancelReminder, pauseReminder, requestPermissions, checkPermissions } from '../services/notifications';
 
 const VERSION = '1.0.0';
+
+const PRESET_TIMES = [
+  { label: 'Morning', sublabel: '8:00 AM', hour: 8, minute: 0 },
+  { label: 'Afternoon', sublabel: '2:00 PM', hour: 14, minute: 0 },
+  { label: 'Evening', sublabel: '6:00 PM', hour: 18, minute: 0 },
+  { label: 'Night', sublabel: '9:00 PM', hour: 21, minute: 0 },
+];
+
+const formatTime = (hour, minute) => {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const h = hour % 12 || 12;
+  const m = minute < 10 ? '0' + minute : minute;
+  return `${h}:${m} ${period}`;
+};
+
+const [showCustomTime, setShowCustomTime] = useState(false);
+const [customHour, setCustomHour] = useState('18');
+const [customMinute, setCustomMinute] = useState('00');
+
+const handleToggleReminders = async (value) => {
+  if (value) {
+    const granted = await requestPermissions();
+    if (!granted) {
+      Alert.alert(
+        'Permission Required',
+        'Please allow notifications in your phone settings to enable reminders.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    await scheduleReminder(reminderTime.hour, reminderTime.minute);
+  } else {
+    await cancelReminder();
+    setReminderPaused(false);
+  }
+  setRemindersEnabled(value);
+};
+
+const handleSelectPreset = async (preset) => {
+  setReminderTime({ hour: preset.hour, minute: preset.minute });
+  if (remindersEnabled) {
+    await scheduleReminder(preset.hour, preset.minute);
+  }
+};
+
+const handleCustomTime = async () => {
+  const h = parseInt(customHour);
+  const m = parseInt(customMinute);
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+    Alert.alert('Invalid Time', 'Please enter a valid hour (0-23) and minute (0-59).');
+    return;
+  }
+  setReminderTime({ hour: h, minute: m });
+  if (remindersEnabled) {
+    await scheduleReminder(h, m);
+  }
+  setShowCustomTime(false);
+};
+
+const handlePause = async () => {
+  await pauseReminder(reminderTime.hour, reminderTime.minute);
+  setReminderPaused(true);
+};
+
+const handleResume = async () => {
+  await scheduleReminder(reminderTime.hour, reminderTime.minute);
+  setReminderPaused(false);
+};
 
 export default function SettingsScreen({ navigation }) {
   const {
     soundEnabled, setSoundEnabled,
     darkMode, setDarkMode,
     showPianoLabels, setShowPianoLabels,
+    remindersEnabled, setRemindersEnabled,
+    reminderTime, setReminderTime,
+    reminderPaused, setReminderPaused,
   } = useSettings();
 
   const theme = darkMode ? dark : light;
@@ -95,6 +169,146 @@ export default function SettingsScreen({ navigation }) {
 
           </View>
         </View>
+
+        {/* Reminders Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.muted }]}>REMINDERS</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+
+            {/* Toggle */}
+            <View style={styles.row}>
+              <View style={styles.rowLeft}>
+                <Text style={[styles.rowLabel, { color: theme.text }]}>Daily Practice Reminder</Text>
+                <Text style={[styles.rowDesc, { color: theme.muted }]}>
+                  Get reminded to practice every day
+                </Text>
+              </View>
+              <Switch
+                value={remindersEnabled}
+                onValueChange={handleToggleReminders}
+                trackColor={{ false: '#ccc', true: '#c84b2f' }}
+                thumbColor="white"
+              />
+            </View>
+
+            {/* Time options — only show when enabled */}
+            {remindersEnabled && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+                {/* Current time */}
+                <View style={styles.row}>
+                  <Text style={[styles.rowLabel, { color: theme.text }]}>Reminder Time</Text>
+                  <Text style={[styles.rowValue, { color: '#c84b2f' }]}>
+                    {formatTime(reminderTime.hour, reminderTime.minute)}
+                  </Text>
+                </View>
+
+                {/* Preset times */}
+                <View style={styles.presetGrid}>
+                  {PRESET_TIMES.map(preset => (
+                    <TouchableOpacity
+                      key={preset.label}
+                      style={[
+                        styles.presetBtn,
+                        { borderColor: theme.border, backgroundColor: theme.card },
+                        reminderTime.hour === preset.hour && reminderTime.minute === preset.minute && {
+                          borderColor: '#c84b2f',
+                          backgroundColor: '#c84b2f10',
+                        },
+                      ]}
+                      onPress={() => handleSelectPreset(preset)}
+                    >
+                      <Text style={[
+                        styles.presetLabel,
+                        { color: theme.text },
+                        reminderTime.hour === preset.hour && reminderTime.minute === preset.minute && {
+                          color: '#c84b2f',
+                        },
+                      ]}>
+                        {preset.label}
+                      </Text>
+                      <Text style={[styles.presetSublabel, { color: theme.muted }]}>
+                        {preset.sublabel}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Custom time toggle */}
+                <TouchableOpacity
+                  style={[styles.customTimeBtn, { borderColor: theme.border }]}
+                  onPress={() => setShowCustomTime(!showCustomTime)}
+                >
+                  <Text style={[styles.customTimeBtnText, { color: theme.muted }]}>
+                    {showCustomTime ? '▲ Hide custom time' : '▼ Set custom time'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Custom time inputs */}
+                {showCustomTime && (
+                  <View style={styles.customTimeRow}>
+                    <TextInput
+                      style={[styles.timeInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
+                      value={customHour}
+                      onChangeText={setCustomHour}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="HH"
+                      placeholderTextColor={theme.muted}
+                    />
+                    <Text style={[styles.timeSeparator, { color: theme.text }]}>:</Text>
+                    <TextInput
+                      style={[styles.timeInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
+                      value={customMinute}
+                      onChangeText={setCustomMinute}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="MM"
+                      placeholderTextColor={theme.muted}
+                    />
+                    <TouchableOpacity
+                      style={styles.setTimeBtn}
+                      onPress={handleCustomTime}
+                    >
+                      <Text style={styles.setTimeBtnText}>Set</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+                {/* Pause/Resume */}
+                {!reminderPaused ? (
+                  <TouchableOpacity style={styles.row} onPress={handlePause}>
+                    <View style={styles.rowLeft}>
+                      <Text style={[styles.rowLabel, { color: theme.text }]}>Pause Reminders</Text>
+                      <Text style={[styles.rowDesc, { color: theme.muted }]}>
+                        Snooze for 7 days
+                      </Text>
+                    </View>
+                    <Text style={{ color: '#c9972b', fontSize: 13, fontFamily: 'monospace' }}>
+                      Pause
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.row} onPress={handleResume}>
+                    <View style={styles.rowLeft}>
+                      <Text style={[styles.rowLabel, { color: theme.text }]}>Reminders Paused</Text>
+                      <Text style={[styles.rowDesc, { color: theme.muted }]}>
+                        Tap to resume now
+                      </Text>
+                    </View>
+                    <Text style={{ color: '#2d7a4f', fontSize: 13, fontFamily: 'monospace' }}>
+                      Resume
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+  </View>
+</View>
 
         {/* About Section */}
         <View style={styles.section}>
@@ -219,4 +433,72 @@ const styles = StyleSheet.create({
     height: 1,
     marginHorizontal: 14,
   },
+  presetGrid: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+  paddingHorizontal: 14,
+  paddingBottom: 8,
+},
+presetBtn: {
+  flex: 1,
+  minWidth: '40%',
+  borderWidth: 1.5,
+  borderRadius: 6,
+  padding: 10,
+  alignItems: 'center',
+  gap: 2,
+},
+presetLabel: {
+  fontSize: 13,
+  fontWeight: '600',
+},
+presetSublabel: {
+  fontSize: 11,
+  fontFamily: 'monospace',
+},
+customTimeBtn: {
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderTopWidth: 1,
+  alignItems: 'center',
+},
+customTimeBtnText: {
+  fontSize: 12,
+  fontFamily: 'monospace',
+  letterSpacing: 1,
+},
+customTimeRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+},
+timeInput: {
+  width: 56,
+  height: 44,
+  borderWidth: 1.5,
+  borderRadius: 6,
+  textAlign: 'center',
+  fontSize: 18,
+  fontWeight: '600',
+  fontFamily: 'monospace',
+},
+timeSeparator: {
+  fontSize: 24,
+  fontWeight: '700',
+},
+setTimeBtn: {
+  flex: 1,
+  backgroundColor: '#1a1a1a',
+  paddingVertical: 12,
+  borderRadius: 6,
+  alignItems: 'center',
+},
+setTimeBtnText: {
+  color: '#f5f0e8',
+  fontSize: 14,
+  fontWeight: '600',
+},
 });
