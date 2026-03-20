@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
-import { scheduleReminder, cancelReminder, pauseReminder, requestPermissions, checkPermissions } from '../services/notifications';
+import { light, dark } from '../context/theme';
+import { scheduleReminder, cancelReminder, pauseReminder, requestPermissions } from '../services/notifications';
 
 const VERSION = '1.0.0';
 
@@ -28,60 +30,6 @@ const formatTime = (hour, minute) => {
   return `${h}:${m} ${period}`;
 };
 
-const [showCustomTime, setShowCustomTime] = useState(false);
-const [customHour, setCustomHour] = useState('18');
-const [customMinute, setCustomMinute] = useState('00');
-
-const handleToggleReminders = async (value) => {
-  if (value) {
-    const granted = await requestPermissions();
-    if (!granted) {
-      Alert.alert(
-        'Permission Required',
-        'Please allow notifications in your phone settings to enable reminders.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-    await scheduleReminder(reminderTime.hour, reminderTime.minute);
-  } else {
-    await cancelReminder();
-    setReminderPaused(false);
-  }
-  setRemindersEnabled(value);
-};
-
-const handleSelectPreset = async (preset) => {
-  setReminderTime({ hour: preset.hour, minute: preset.minute });
-  if (remindersEnabled) {
-    await scheduleReminder(preset.hour, preset.minute);
-  }
-};
-
-const handleCustomTime = async () => {
-  const h = parseInt(customHour);
-  const m = parseInt(customMinute);
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-    Alert.alert('Invalid Time', 'Please enter a valid hour (0-23) and minute (0-59).');
-    return;
-  }
-  setReminderTime({ hour: h, minute: m });
-  if (remindersEnabled) {
-    await scheduleReminder(h, m);
-  }
-  setShowCustomTime(false);
-};
-
-const handlePause = async () => {
-  await pauseReminder(reminderTime.hour, reminderTime.minute);
-  setReminderPaused(true);
-};
-
-const handleResume = async () => {
-  await scheduleReminder(reminderTime.hour, reminderTime.minute);
-  setReminderPaused(false);
-};
-
 export default function SettingsScreen({ navigation }) {
   const {
     soundEnabled, setSoundEnabled,
@@ -93,6 +41,61 @@ export default function SettingsScreen({ navigation }) {
   } = useSettings();
 
   const theme = darkMode ? dark : light;
+
+  // ← ALL HOOKS AND HANDLERS GO HERE INSIDE THE COMPONENT
+  const [showCustomTime, setShowCustomTime] = useState(false);
+  const [customHour, setCustomHour] = useState('18');
+  const [customMinute, setCustomMinute] = useState('00');
+
+  const handleToggleReminders = async (value) => {
+    if (value) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permission Required',
+          'Please allow notifications in your phone settings to enable reminders.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      await scheduleReminder(reminderTime.hour, reminderTime.minute);
+    } else {
+      await cancelReminder();
+      setReminderPaused(false);
+    }
+    setRemindersEnabled(value);
+  };
+
+  const handleSelectPreset = async (preset) => {
+    setReminderTime({ hour: preset.hour, minute: preset.minute });
+    if (remindersEnabled) {
+      await scheduleReminder(preset.hour, preset.minute);
+    }
+  };
+
+  const handleCustomTime = async () => {
+    const h = parseInt(customHour);
+    const m = parseInt(customMinute);
+    if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+      Alert.alert('Invalid Time', 'Please enter a valid hour (0-23) and minute (0-59).');
+      return;
+    }
+    setReminderTime({ hour: h, minute: m });
+    if (remindersEnabled) {
+      await scheduleReminder(h, m);
+    }
+    setShowCustomTime(false);
+  };
+
+  const handlePause = async () => {
+    await pauseReminder(reminderTime.hour, reminderTime.minute);
+    setReminderPaused(true);
+  };
+
+  const handleResume = async () => {
+    await scheduleReminder(reminderTime.hour, reminderTime.minute);
+    setReminderPaused(false);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -348,24 +351,6 @@ export default function SettingsScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-// ─── THEMES ──────────────────────────────────────────────────────────────────
-
-const light = {
-  bg: '#f5f0e8',
-  card: 'white',
-  text: '#1a1a1a',
-  muted: '#888',
-  border: '#e0e0e0',
-};
-
-const dark = {
-  bg: '#1a1a1a',
-  card: '#2c2c2c',
-  text: '#f5f0e8',
-  muted: '#888',
-  border: '#3a3a3a',
-};
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 
