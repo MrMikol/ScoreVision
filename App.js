@@ -3,6 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SettingsProvider } from './src/context/SettingsContext';
 import { syncToSheets } from './src/services/sync';
+import * as Notifications from 'expo-notifications';
+import { scheduleReminder } from './src/services/notifications';
 
 import HomeScreen from './src/screens/HomeScreen';
 import GameSetupScreen from './src/screens/GameSetupScreen';
@@ -16,22 +18,21 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    syncToSheets();
-  }, []);
+    const init = async () => {
+      // Sync analytics
+      syncToSheets();
 
-  return (
-    <SettingsProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="GameSetup" component={GameSetupScreen} />
-          <Stack.Screen name="Game" component={GameScreen} />
-          <Stack.Screen name="Results" component={ResultsScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Learn" component={LearnScreen} />
-          <Stack.Screen name="History" component={HistoryScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SettingsProvider>
-  );
+      // Schedule default reminder on first launch
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === 'granted') {
+        await scheduleReminder(8, 0);
+      } else {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        if (newStatus === 'granted') {
+          await scheduleReminder(8, 0);
+        }
+      }
+    };
+    init();
+  }, []);
 }

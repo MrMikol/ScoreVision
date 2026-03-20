@@ -6,8 +6,8 @@ export function SettingsProvider({ children }) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [showPianoLabels, setShowPianoLabels] = useState(true);
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState({ hour: 18, minute: 0 }); // default 6PM
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
+const [reminderTime, setReminderTime] = useState({ hour: 8, minute: 0 });
   const [reminderPaused, setReminderPaused] = useState(false);
 
   return (
