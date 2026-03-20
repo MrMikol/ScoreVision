@@ -19,10 +19,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   useEffect(() => {
     const init = async () => {
-      // Sync analytics
       syncToSheets();
-
-      // Schedule default reminder on first launch
       const { status } = await Notifications.getPermissionsAsync();
       if (status === 'granted') {
         await scheduleReminder(8, 0);
@@ -35,4 +32,20 @@ export default function App() {
     };
     init();
   }, []);
+
+  return (
+    <SettingsProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="GameSetup" component={GameSetupScreen} />
+          <Stack.Screen name="Game" component={GameScreen} />
+          <Stack.Screen name="Results" component={ResultsScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="History" component={HistoryScreen} />
+          <Stack.Screen name="Learn" component={LearnScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SettingsProvider>
+  );
 }
