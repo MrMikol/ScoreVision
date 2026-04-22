@@ -109,34 +109,26 @@ export default function ResultsScreen({ navigation, route }) {
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: theme.text }]}>{score}</Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Total Score</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: theme.text }]}>{total}</Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Notes Played</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: '#2d7a4f' }]}>{correct}</Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Correct</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: '#c84b2f' }]}>{incorrect}</Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Incorrect</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: '#c84b2f' }]}>
-              {bestStreak}🔥
-            </Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Best Streak</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.statCardVal, { color: theme.text }]}>
-              {difficulty === 'hard' ? '×2' : difficulty === 'medium' ? '×1.5' : '×1'}
-            </Text>
-            <Text style={[styles.statCardLbl, { color: theme.muted }]}>Multiplier</Text>
-          </View>
+          {[
+            { val: score, lbl: 'Total Score', color: theme.text },
+            { val: total, lbl: 'Notes Played', color: theme.text },
+            { val: correct, lbl: 'Correct', color: '#2d7a4f' },
+            { val: incorrect, lbl: 'Incorrect', color: '#c84b2f' },
+            { val: `${bestStreak}🔥`, lbl: 'Best Streak', color: '#c84b2f' },
+            {
+              val: difficulty === 'hard' ? '×2' : difficulty === 'medium' ? '×1.5' : '×1',
+              lbl: 'Multiplier',
+              color: theme.text,
+            },
+          ].map((item, i) => (
+            <View
+              key={i}
+              style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            >
+              <Text style={[styles.statCardVal, { color: item.color }]}>{item.val}</Text>
+              <Text style={[styles.statCardLbl, { color: theme.muted }]}>{item.lbl}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Most Missed — Endless only */}
@@ -190,7 +182,7 @@ export default function ResultsScreen({ navigation, route }) {
                   />
                 </View>
 
-                {/* Note info */}
+                {/* Note info + result */}
                 <View style={styles.reviewLeft}>
                   <Text style={styles.reviewClef}>
                     {attempt.clef.toUpperCase()} CLEF
@@ -198,9 +190,7 @@ export default function ResultsScreen({ navigation, route }) {
                   <View style={styles.reviewNoteRow}>
                     <View style={styles.reviewNoteItem}>
                       <Text style={styles.reviewNoteLabel}>Correct</Text>
-                      <Text style={styles.reviewNoteName}>
-                        {attempt.correctNote}
-                      </Text>
+                      <Text style={styles.reviewNoteName}>{attempt.correctNote}</Text>
                     </View>
                     <Text style={styles.reviewArrow}>→</Text>
                     <View style={styles.reviewNoteItem}>
@@ -212,16 +202,14 @@ export default function ResultsScreen({ navigation, route }) {
                         {attempt.answeredNote}
                       </Text>
                     </View>
+                    <Text style={[
+                      styles.reviewResult,
+                      attempt.wasCorrect ? { color: '#2d7a4f' } : { color: '#c84b2f' },
+                    ]}>
+                      {attempt.wasCorrect ? '✓' : '✗'}
+                    </Text>
                   </View>
                 </View>
-
-                {/* Result */}
-                <Text style={[
-                  styles.reviewResult,
-                  attempt.wasCorrect ? { color: '#2d7a4f' } : { color: '#c84b2f' },
-                ]}>
-                  {attempt.wasCorrect ? '✓' : '✗'}
-                </Text>
               </View>
             ))}
           </View>
@@ -276,6 +264,8 @@ const styles = StyleSheet.create({
   modeBadgeRow: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   modeBadge: {
     paddingVertical: 4,
@@ -328,20 +318,21 @@ const styles = StyleSheet.create({
     minWidth: '28%',
     borderWidth: 2,
     borderRadius: 6,
-    padding: 14,
+    padding: 10,
     alignItems: 'center',
     gap: 4,
   },
   statCardVal: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     fontFamily: 'monospace',
   },
   statCardLbl: {
-    fontSize: 10,
-    letterSpacing: 1,
+    fontSize: 9,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
     textAlign: 'center',
+    flexShrink: 1,
   },
   section: {
     width: '100%',
@@ -403,12 +394,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reviewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     borderWidth: 2,
     borderRadius: 6,
     padding: 12,
+    gap: 8,
   },
   reviewCorrect: {
     borderColor: '#2d7a4f',
@@ -419,11 +409,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff5f5',
   },
   reviewStaff: {
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 4,
   },
   reviewLeft: {
     gap: 6,
-    flex: 1,
+    width: '100%',
   },
   reviewClef: {
     fontFamily: 'monospace',
@@ -436,6 +427,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    justifyContent: 'space-between',
   },
   reviewNoteItem: {
     gap: 2,

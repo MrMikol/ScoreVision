@@ -360,11 +360,14 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     width: '44%',
+    height: 160,           // fixed height
     borderWidth: 2,
     borderRadius: 6,
     padding: 8,
     alignItems: 'center',
+    justifyContent: 'center',  // center content vertically
     gap: 6,
+    overflow: 'hidden',
   },
   noteCardName: {
     fontSize: 14,

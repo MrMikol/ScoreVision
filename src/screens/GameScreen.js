@@ -509,6 +509,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     position: 'relative',
+    paddingVertical: 8,
   },
   feedbackOverlay: {
     position: 'absolute',

@@ -35,7 +35,8 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Learn')}
         >
           <Text style={[styles.btnSecondaryText, { color: theme.btnSecondaryText }]}>
-            𝄞  Learn
+            {/* 𝄞  Learn */}
+            🎵  Learn
           </Text>
         </TouchableOpacity>
 
@@ -111,8 +112,10 @@ const styles = StyleSheet.create({
   btnSecondary: {
     backgroundColor: 'transparent',
     paddingVertical: 18,
+    minHeight: 60,
     borderRadius: 4,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
   },
   btnSecondaryText: {

@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Svg, { Line, Ellipse, Text as SvgText } from 'react-native-svg';
 import { useSettings } from '../context/SettingsContext';
 import { light, dark } from '../context/theme';
@@ -16,10 +16,10 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
   const theme = darkMode ? dark : light;
 
   const staffWidth = small ? 160 : 320;
-  const staffHeight = small ? 100 : 160;
+  const staffHeight = small ? 130 : 210;
   const scale = small ? 0.5 : 1;
 
-  const SCALED_STAFF_TOP = small ? 30 : STAFF_TOP;
+  const SCALED_STAFF_TOP = small ? 65 : 105;
   const SCALED_LINE_SPACING = LINE_SPACING * scale;
   const SCALED_NOTE_R_X = NOTE_RADIUS_X * scale;
   const SCALED_NOTE_R_Y = NOTE_RADIUS_Y * scale;
@@ -34,9 +34,9 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
     return Array.from({ length: STAFF_LINES }).map((_, i) => (
       <Line
         key={i}
-        x1={SCALED_CLEF_X + 20}
+        x1={10}
         y1={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
-        x2={staffWidth - 5}
+        x2={staffWidth - 10}
         y2={SCALED_STAFF_TOP + i * SCALED_LINE_SPACING}
         stroke={theme.text}
         strokeWidth={small ? 0.75 : 1.5}
@@ -143,23 +143,39 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
 
   const renderClef = () => {
     if (clef === 'treble') {
+      const fontSize = Platform.OS === 'android'
+        ? (small ? 20 : 40)
+        : (small ? 36 : 72);
+      const y = Platform.OS === 'android'
+        ? (small ? 30 : 60)
+        : (small ? 36 : 72);
+
       return (
         <SvgText
-          x={SCALED_CLEF_X}
-          y={SCALED_STAFF_TOP + 52 * scale}
-          fontSize={small ? 44 : 88}
+          x={staffWidth / 2}
+          y={y}
+          fontSize={fontSize}
           fill={theme.text}
+          textAnchor="middle"
         >
           𝄞
         </SvgText>
       );
     } else {
+      const fontSize = Platform.OS === 'android'
+        ? (small ? 24 : 48)
+        : (small ? 28 : 56);
+      const y = Platform.OS === 'android'
+        ? (small ? 36 : 72)
+        : (small ? 28 : 56);
+
       return (
         <SvgText
-          x={SCALED_CLEF_X}
-          y={SCALED_STAFF_TOP + 34 * scale}
-          fontSize={small ? 36 : 72}
+          x={staffWidth / 2}
+          y={y}
+          fontSize={fontSize}
           fill={theme.text}
+          textAnchor="middle"
         >
           𝄢
         </SvgText>
@@ -182,8 +198,6 @@ export default function StaffDisplay({ note, clef = 'treble', small = false }) {
 const styles = StyleSheet.create({
   container: {
     borderRadius: 4,
-    padding: 12,
     alignItems: 'center',
-    borderWidth: 2,
   },
 });
